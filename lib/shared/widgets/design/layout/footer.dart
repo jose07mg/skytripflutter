@@ -9,7 +9,10 @@ class FooterWidget extends StatelessWidget {
       height: 60,
       color: Theme.of(context).colorScheme.primaryContainer,
       child: const Center(
-        child: Text('© 2026 MiraDigital', style: TextStyle(color: Colors.white)),
+        child: Text(
+          '© 2026 MiraDigital',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }

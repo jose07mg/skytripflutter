@@ -27,7 +27,9 @@ class AuthService {
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (email.isEmpty || password.isEmpty) {
-      debugPrint('AuthService.signInWithEmailAndPassword -> credenciales vacías');
+      debugPrint(
+        'AuthService.signInWithEmailAndPassword -> credenciales vacías',
+      );
       throw AuthException('Credenciales inválidas');
     }
 
