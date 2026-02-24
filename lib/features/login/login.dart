@@ -12,18 +12,22 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   void _login() {
-    // 1. Obtenemos el texto de los controladores
     String user = _userController.text;
     String password = _passwordController.text;
 
-    // 2. Control de errores: Solo permitimos el paso si las credenciales son correctas
-    // (Siguiendo tu ejemplo: admin / 123)
-    if (user == "admin" && password == "123") {
-      // 3. Navegación a Home usando tu clase Routes
-      // Usamos pushReplacementNamed para que no se pueda volver atrás al login
+    // Validación de credenciales
+    if (user == "Usuario" && password == "admin") {
+      // Si son correctas, navega a Home
       Navigator.pushReplacementNamed(context, '/home');
     } else {
-      // Si los datos son erróneos, simplemente limpiamos el campo de contraseña
+      // Si son erróneas, muestra el mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Usuario o contraseña incorrectos'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      // Opcional: limpiar la contraseña para reintentar
       _passwordController.clear();
     }
   }
@@ -31,16 +35,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Fondo oscuro según el diseño
+      backgroundColor: Colors.black,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo de Mira Digital
             Image.asset('images/logo.png', height: 120, fit: BoxFit.contain),
             const SizedBox(height: 50),
-
             const Text(
               'Usuario',
               style: TextStyle(color: Colors.grey, fontSize: 14),
@@ -59,7 +61,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 20),
-
             const Text(
               'Contraseña',
               style: TextStyle(color: Colors.grey, fontSize: 14),
@@ -79,15 +80,13 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 30),
-
-            // Botón de Iniciar Sesión
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _login, // Ejecuta la validación y navegación
+                onPressed: _login,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007AFF), // Azul Mira Digital
+                  backgroundColor: const Color(0xFF007AFF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
