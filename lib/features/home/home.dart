@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+// Importamos el archivo de nóminas usando la ruta relativa correcta
+import '../nominas/nominas.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -139,22 +141,31 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.black,
 
-      // --- MENÚ LATERAL BLANCO Y ESTRECHO ---
+      // --- MENÚ LATERAL ---
       drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.45, // Menos de la mitad
-        backgroundColor: Colors.white, // Fondo blanco como antes
+        width: MediaQuery.of(context).size.width * 0.45,
+        backgroundColor: Colors.white,
         child: SafeArea(
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               const SizedBox(height: 20),
-              _menuTile('Fichar'),
-              _menuTile('Nóminas'),
-              _menuTile('Vacaciones'),
-              _menuTile('Manuales'),
-              _menuTile('Albaranes'),
-              _menuTile('Gastos'),
-              _menuTile('Tareas'),
+              _menuTile('Fichar', () => Navigator.pop(context)),
+
+              // NAVEGACIÓN A NÓMINAS CORREGIDA (N Mayúscula)
+              _menuTile('Nóminas', () {
+                Navigator.pop(context); // Cierra el Drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NominasPage()),
+                );
+              }),
+
+              _menuTile('Vacaciones', () {}),
+              _menuTile('Manuales', () {}),
+              _menuTile('Albaranes', () {}),
+              _menuTile('Gastos', () {}),
+              _menuTile('Tareas', () {}),
               const Divider(),
               ListTile(
                 title: const Text(
@@ -213,16 +224,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _menuTile(String title) {
+  // FUNCIÓN ACTUALIZADA PARA ACEPTAR NAVEGACIÓN
+  Widget _menuTile(String title, VoidCallback onTap) {
     return ListTile(
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Colors.black87,
-        ), // Texto oscuro para fondo blanco
+        style: const TextStyle(fontSize: 16, color: Colors.black87),
       ),
-      onTap: () => Navigator.pop(context),
+      onTap: onTap,
     );
   }
 
