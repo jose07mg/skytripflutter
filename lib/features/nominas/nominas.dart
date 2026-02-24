@@ -8,45 +8,22 @@ class NominasPage extends StatefulWidget {
 }
 
 class _NominasPageState extends State<NominasPage> {
-  // Variables para almacenar la selección
   String? selectedYear;
   String? selectedMonth;
 
-  // Listas de ejemplo para los desplegables
-  final List<String> years = [
-    '2020',
-    '2021',
-    '2022',
-    '2023',
-    '2024',
-    '2025',
-    '2026',
-  ];
-  final List<String> months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+  final List<String> years = ['2024', '2025', '2026'];
+  final List<String> months = ['January', 'February', 'March', 'April'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Fondo negro igual al login
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         leading: const Icon(
           Icons.menu,
-          color: Colors.blue,
-        ), // Icono de hamburguesa azul
+          color: Color(0xFF007AFF),
+        ), // Azul directo
         title: const Text('Nóminas', style: TextStyle(color: Colors.white)),
         elevation: 0,
       ),
@@ -77,11 +54,9 @@ class _NominasPageState extends State<NominasPage> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: () {
-                  // Funcionalidad (?)
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007AFF), // Azul corporativo
+                  backgroundColor: const Color(0xFF007AFF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -102,7 +77,6 @@ class _NominasPageState extends State<NominasPage> {
     );
   }
 
-  // Widget auxiliar para crear los menús desplegables con estilo oscuro
   Widget _buildDropdown({
     required String hint,
     required String? value,
@@ -112,20 +86,17 @@ class _NominasPageState extends State<NominasPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(
-          0xFF1C1C1E,
-        ), // Gris muy oscuro para el fondo del dropdown
+        color: const Color(0xFF1C1C1E), // Gris oscuro sólido
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.blue.withOpacity(0.5),
-        ), // Borde azul sutil
+        // Usamos un azul oscuro sólido en lugar de opacidad
+        border: Border.all(color: const Color(0xFF004A99), width: 1.5),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: const TextStyle(color: Colors.grey)),
+          hint: Text(hint, style: const TextStyle(color: Color(0xFF8E8E93))),
           dropdownColor: const Color(0xFF1C1C1E),
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blue),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF007AFF)),
           isExpanded: true,
           style: const TextStyle(color: Colors.white, fontSize: 16),
           items: items.map((String item) {
