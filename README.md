@@ -51,6 +51,7 @@ flutter analyze
 
 ```bash
 dart format lib/
+dart format app/
 ```
 
 ## Estructura del proyecto

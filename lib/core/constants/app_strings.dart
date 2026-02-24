@@ -8,4 +8,6 @@ class AppStrings {
   static const String password = 'Contraseñaa';
   static const String pleaseEnterPassword = 'Por favor ingrese su contraseña';
   static const String signIn = 'Iniciar sesión';
+  static const String usuario = 'Usuario';
+  static const String contrasena = 'admin';
 }

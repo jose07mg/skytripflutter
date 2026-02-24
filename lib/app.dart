@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rms/shared/themes/app_theme.dart';
 
 import 'core/constants/routes.dart';
-import 'features/auth/auth_page.dart';
+import 'features/login/login.dart';
+import 'features/home/home.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -16,8 +17,8 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       initialRoute: Routes.login,
       routes: {
-        Routes.login: (context) => const AuthPage(),
-        Routes.home: (context) => const AuthPage(),
+        Routes.login: (context) => const LoginPage(),
+        Routes.home: (context) => const HomePage(),
       },
     );
   }
