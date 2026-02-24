@@ -9,130 +9,246 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Variables del entorno
-  Timer? _timer; // El controlador que ejecuta el código cada segundo
-  Duration _duration = const Duration(); // Almacena el tiempo transcurrido
-  bool _isRunning = false; // Estado para saber si el cronómetro está activo
+  // --- VARIABLES DE ESTADO ---
+  Timer? _timer;
+  Duration _duration = const Duration();
+  bool _isStarted = false;
+  bool _isPaused = false;
+  String? _selectedPauseReason;
 
-  // Funcion para iniciar el contador
-  void _startTimer() {
-    if (_isRunning) return; // Si ya está corriendo, no tocamos nada
+  // --- LÓGICA DEL CRONÓMETRO ---
+  void _toggleTimer() {
+    if (!_isStarted) {
+      setState(() {
+        _isStarted = true;
+        _isPaused = false;
+      });
+      _runTimer();
+    }
+  }
 
-    setState(() => _isRunning = true); // Actualizamos el estado de correr
-
-    // Creamos un temporizador que se repite cada 1 segundo
+  void _runTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        final seconds = _duration.inSeconds + 1; // Sumamos un segundo
-
-        // Verificamos un límite de 10 horas que hemos programado
-        if (seconds > 36000) {
-          _stopTimer(); // Si llega al final se detiene
+        final seconds = _duration.inSeconds + 1;
+        if (seconds >= 36000) {
+          _stopTotal();
         } else {
-          _duration = Duration(seconds: seconds); // Actualizamos la duración
+          _duration = Duration(seconds: seconds);
         }
       });
     });
   }
 
-  // Funcion para detener el contador
-  void _stopTimer() {
-    _timer?.cancel(); // Cancelamos el proceso repetitivo
-    setState(() => _isRunning = false); // Cambiamos el estado a "detenido"
+  void _pauseResume() {
+    if (!_isPaused) {
+      _showPauseDialog();
+    } else {
+      setState(() => _isPaused = false);
+      _runTimer();
+    }
   }
 
-  // --- FUNCIÓN PARA DAR FORMATO DE RELOJ (00:00:00) ---
-  String _formatDuration(Duration duration) {
-    // Agrega un cero a la izquierda si el número es menor a 10
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
+  void _stopTotal() {
+    _timer?.cancel();
+    setState(() {
+      _isStarted = false;
+      _isPaused = false;
+      _duration = const Duration();
+    });
+  }
 
+  // --- CUADRO DE DIÁLOGO DE PAUSA ---
+  void _showPauseDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text(
+                'Seleccionar Motivo de Pausa',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButton<String>(
+                    value: _selectedPauseReason,
+                    hint: const Text('Seleccionar motivo'),
+                    icon: const Icon(Icons.unfold_more, color: Colors.blue),
+                    isExpanded: true,
+                    underline: Container(),
+                    items: <String>['fumar', 'comer'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (newValue) {
+                      setDialogState(() => _selectedPauseReason = newValue);
+                    },
+                  ),
+                ],
+              ),
+              actionsAlignment: MainAxisAlignment.spaceEvenly,
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: _selectedPauseReason == null
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          _timer?.cancel();
+                          setState(() => _isPaused = true);
+                        },
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-
-    // Retorna el string formateado con horas, minutos y segundos
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
-  }
-
-  // --- LIMPIEZA ---
-  @override
-  void dispose() {
-    _timer
-        ?.cancel(); // Es vital cancelar el timer si salimos de la app para no gastar batería
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Fondo negro como en la imagen
+      backgroundColor: Colors.black,
+
+      // --- MENÚ LATERAL BLANCO Y ESTRECHO ---
+      drawer: Drawer(
+        width: MediaQuery.of(context).size.width * 0.45, // Menos de la mitad
+        backgroundColor: Colors.white, // Fondo blanco como antes
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const SizedBox(height: 20),
+              _menuTile('Fichar'),
+              _menuTile('Nóminas'),
+              _menuTile('Vacaciones'),
+              _menuTile('Manuales'),
+              _menuTile('Albaranes'),
+              _menuTile('Gastos'),
+              _menuTile('Tareas'),
+              const Divider(),
+              ListTile(
+                title: const Text(
+                  'Cerrar Sesión',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: const Icon(Icons.menu, color: Colors.blue, size: 30),
-        title: const Text(
-          'Fichar',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.normal),
-        ),
+        iconTheme: const IconThemeData(color: Colors.blue, size: 30),
+        title: const Text('Fichar', style: TextStyle(color: Colors.white)),
       ),
+
       body: Column(
         children: [
-          const SizedBox(height: 60),
-
-          // Espacio para el Logo
+          const SizedBox(height: 40),
           Center(
             child: Image.asset(
               'images/logo.png',
-              height: 70,
-              fit: BoxFit.contain,
-              // Si la imagen falla, muestra un icono de reemplazo
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.business, color: Colors.white, size: 70),
+              height: 80,
+              errorBuilder: (c, e, s) =>
+                  const Icon(Icons.business, color: Colors.white, size: 80),
             ),
           ),
-
-          const SizedBox(height: 50),
-
-          // Texto del Contador
+          const SizedBox(height: 40),
           Text(
-            _formatDuration(_duration), // Llamamos a la función de formato
+            _formatDuration(_duration),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 68,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 2,
+              fontSize: 64,
+              fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 40),
 
-          const SizedBox(height: 50),
-
-          // Botón de Acción
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007AFF), // Azul corporativo
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  elevation: 5,
-                ),
-                // Si está corriendo usa _stopTimer, si no, usa _startTimer
-                onPressed: _isRunning ? _stopTimer : _startTimer,
-                child: Text(
-                  _isRunning ? 'Finalizar Jornada' : 'Iniciar Jornada',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+          if (!_isStarted) ...[
+            _actionButton('Iniciar Jornada', Colors.blue, _toggleTimer),
+          ] else ...[
+            _actionButton(
+              _isPaused ? 'Reanudar Jornada' : 'Pausar Jornada',
+              Colors.orange.shade700,
+              _pauseResume,
             ),
-          ),
+            const SizedBox(height: 20),
+            _actionButton('Finalizar Jornada', Colors.red, _stopTotal),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _menuTile(String title) {
+    return ListTile(
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.black87,
+        ), // Texto oscuro para fondo blanco
+      ),
+      onTap: () => Navigator.pop(context),
+    );
+  }
+
+  Widget _actionButton(String text, Color color, VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: SizedBox(
+        width: double.infinity,
+        height: 55,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          onPressed: onPressed,
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }
