@@ -7,6 +7,7 @@ import 'features/login/login.dart';
 import 'features/home/home.dart';
 import 'features/manuales/manuales.dart';
 import 'features/vacaciones/vacaciones.dart';
+import 'features/albaranes/albaranes.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         Routes.home: (context) => const HomePage(),
         Routes.manuales: (context) => const ManualesScreen(),
         Routes.vacaciones: (context) => const VacacionesPage(),
+        Routes.albaranes: (context) => const AlbaranesPage(),
       },
     );
   }
