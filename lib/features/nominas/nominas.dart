@@ -12,8 +12,29 @@ class _NominasPageState extends State<NominasPage> {
   String? selectedYear;
   String? selectedMonth;
 
-  final List<String> years = ['2024', '2025', '2026'];
-  final List<String> months = ['January', 'February', 'March', 'April'];
+  final List<String> years = [
+    '2020',
+    '2021',
+    '2022',
+    '2023',
+    '2024',
+    '2025',
+    '2026',
+  ];
+  final List<String> months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
 
   @override
   Widget build(BuildContext context) {
