@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// Importación del menú centralizado según tu estructura de carpetas
+import '../../shared/widgets/common/menu_lateral.dart';
 
 // --- MODELO DE DATOS ---
 class Punto {
@@ -13,13 +15,19 @@ class AlbaranesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Simulación de lista de albaranes
     final albaranes = List.generate(8, (index) => "ALBA01001-E");
 
     return Scaffold(
       backgroundColor: Colors.black,
+
+      // LLAMADA AL MENÚ CENTRALIZADO
+      drawer: const MenuLateral(),
+
       appBar: AppBar(
         backgroundColor: Colors.black,
-        leading: const Icon(Icons.menu, color: Colors.blue),
+        // El icono del menú (hamburguesa) aparecerá automáticamente gracias al drawer
+        iconTheme: const IconThemeData(color: Colors.blue, size: 30),
         title: const Text('Albaranes', style: TextStyle(color: Colors.white)),
       ),
       body: Column(
@@ -61,7 +69,6 @@ class AlbaranesPage extends StatelessWidget {
                         ),
                       );
                     },
-                    // CAMBIO: Usamos Center para que el texto no se desvíe
                     child: Center(
                       child: Text(
                         albaranes[index],
@@ -102,6 +109,7 @@ class _SignaturePageState extends State<SignaturePage> {
       );
       return;
     }
+    // Lógica para guardar la firma y volver
     Navigator.pop(context);
   }
 
@@ -131,7 +139,7 @@ class _SignaturePageState extends State<SignaturePage> {
           ),
           const Spacer(),
 
-          // ARREGLO DEL PAINT: Usamos un LayoutBuilder para obtener el contexto correcto del cuadro
+          // ÁREA DE FIRMA
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
@@ -145,15 +153,12 @@ class _SignaturePageState extends State<SignaturePage> {
                   return GestureDetector(
                     onPanUpdate: (details) {
                       setState(() {
-                        // Buscamos el RenderBox específico de este contenedor
                         RenderBox renderBox =
                             context.findRenderObject() as RenderBox;
-                        // Convertimos la posición global a local del cuadro gris
                         Offset localPosition = renderBox.globalToLocal(
                           details.globalPosition,
                         );
 
-                        // Solo añadimos el punto si está dentro de los límites del cuadro
                         if (localPosition.dy >= 0 &&
                             localPosition.dy <= constraints.maxHeight) {
                           puntos.add(
@@ -191,6 +196,7 @@ class _SignaturePageState extends State<SignaturePage> {
 
           const Spacer(),
 
+          // BOTONES DE ACCIÓN
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Row(
@@ -226,6 +232,7 @@ class _SignaturePageState extends State<SignaturePage> {
   }
 }
 
+// Pintor para el trazo de la firma
 class SignaturePainter extends CustomPainter {
   final List<Punto?> puntos;
   SignaturePainter({required this.puntos});

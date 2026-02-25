@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
-
-// Importa aquí tu página de nóminas según tu estructura
-// import 'package:tu_proyecto/features/nominas/nominas_page.dart';
+// Importación del menú centralizado según tu estructura de carpetas
+import '../../shared/widgets/common/menu_lateral.dart';
 
 class ManualesScreen extends StatefulWidget {
   const ManualesScreen({super.key});
@@ -22,63 +20,23 @@ class _ManualesScreenState extends State<ManualesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
-      // --- MENÚ LATERAL INTEGRADO ---
-      drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.45,
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const SizedBox(height: 20),
-              _menuTile('Fichar', () => Navigator.pop(context)),
-
-              _menuTile('Nóminas', () {
-                Navigator.pop(context);
-                // Descomenta esto cuando tengas NominasPage lista
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(builder: (context) => const NominasPage()),
-                // );
-              }),
-
-              _menuTile('Vacaciones', () {}),
-              _menuTile('Manuales', () => Navigator.pop(context)),
-              _menuTile('Albaranes', () {}),
-              _menuTile('Gastos', () {}),
-              _menuTile('Tareas', () {}),
-              const Divider(),
-              ListTile(
-                title: const Text(
-                  'Cerrar Sesión',
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                onTap: () {
-                  developer.log('Cerrando sesión...');
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-
+      // LLAMADA AL MENÚ CENTRALIZADO: Limpia las más de 60 líneas de código repetido
+      drawer: const MenuLateral(),
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        // iconTheme en azul para que el icono del menú sea visible sobre negro
+        // El icono del menú (hamburguesa) aparecerá automáticamente
         iconTheme: const IconThemeData(color: Color(0xFF2196F3), size: 30),
         title: const Text('Manuales', style: TextStyle(color: Colors.white)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2.0),
           child: Container(
-            // Solución al aviso azul de 'withOpacity'
+            // Mantenemos la corrección de rendimiento sugerida por Flutter
             color: const Color(0xFF2196F3).withValues(alpha: 0.5),
             height: 2.0,
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
         child: Column(
@@ -100,12 +58,7 @@ class _ManualesScreenState extends State<ManualesScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                if (_selectedMarca != null && _selectedModelo != null) {
-                  // Solución al aviso azul de 'print'
-                  developer.log(
-                    'Mostrando: $_selectedMarca - $_selectedModelo',
-                  );
-                }
+                // Lógica para abrir el manual seleccionado
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF007BFF),
@@ -126,25 +79,14 @@ class _ManualesScreenState extends State<ManualesScreen> {
     );
   }
 
-  // --- WIDGETS AUXILIARES ---
-
-  Widget _menuTile(String title, VoidCallback onTap) {
-    return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.black, fontSize: 16),
-      ),
-      onTap: onTap,
-    );
-  }
-
+  // Widget auxiliar para construir los selectores con validación de seguridad
   Widget _buildSafeDropdown({
     required String hint,
     required String? value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
-    // Validación para evitar la pantalla roja de 'Assertion failed'
+    // Validación para evitar errores de aserción si el valor no está en la lista
     final String? validatedValue = items.contains(value) ? value : null;
 
     return Container(

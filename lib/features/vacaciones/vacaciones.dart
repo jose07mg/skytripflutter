@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// Importación del menú centralizado según tu estructura de carpetas
+import '../../shared/widgets/common/menu_lateral.dart';
 
 class VacacionesPage extends StatefulWidget {
   const VacacionesPage({super.key});
@@ -73,9 +75,7 @@ class _VacacionesPageState extends State<VacacionesPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Cierra el aviso
-              Navigator.pop(
-                context,
-              ); // Opcional: vuelve al Home automáticamente
+              Navigator.pop(context); // Vuelve a la pantalla anterior
             },
             child: const Text('Aceptar'),
           ),
@@ -88,11 +88,17 @@ class _VacacionesPageState extends State<VacacionesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+
+      // LLAMADA AL MENÚ CENTRALIZADO: Sustituye las más de 60 líneas de código repetido
+      drawer: const MenuLateral(),
+
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Vacaciones'),
-        // Flutter pondrá automáticamente la flecha de volver aquí
+        // El icono de menú aparecerá automáticamente al asignar el drawer
+        iconTheme: const IconThemeData(color: Colors.blue, size: 30),
+        title: const Text('Vacaciones', style: TextStyle(color: Colors.white)),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(

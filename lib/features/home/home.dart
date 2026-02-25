@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-// Importamos el archivo de nóminas usando la ruta relativa correcta
-import '../nominas/nominas.dart';
+// Importación del menú centralizado según tu estructura
+import '../../shared/widgets/common/menu_lateral.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -141,47 +141,13 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.black,
 
-      // --- MENÚ LATERAL ---
-      drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.45,
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const SizedBox(height: 20),
-              _menuTile('Fichar', () => Navigator.pop(context)),
-
-              // NAVEGACIÓN A NÓMINAS CORREGIDA (N Mayúscula)
-              _menuTile('Nóminas', () {
-                Navigator.pop(context); // Cierra el Drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NominasPage()),
-                );
-              }),
-
-              _menuTile('Vacaciones', () {}),
-              _menuTile('Manuales', () {}),
-              _menuTile('Albaranes', () {}),
-              _menuTile('Gastos', () {}),
-              _menuTile('Tareas', () {}),
-              const Divider(),
-              ListTile(
-                title: const Text(
-                  'Cerrar Sesión',
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
+      // LLAMADA AL MENÚ CENTRALIZADO: Sustituye toda la navegación repetida
+      drawer: const MenuLateral(),
 
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+        // El icono del menú aparecerá automáticamente al asignar el drawer
         iconTheme: const IconThemeData(color: Colors.blue, size: 30),
         title: const Text('Fichar', style: TextStyle(color: Colors.white)),
       ),
@@ -191,7 +157,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 40),
           Center(
             child: Image.asset(
-              'images/logo.png',
+              'assets/images/logo.png', // Ruta ajustada a tu nueva estructura de assets
               height: 80,
               errorBuilder: (c, e, s) =>
                   const Icon(Icons.business, color: Colors.white, size: 80),
@@ -221,17 +187,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ],
       ),
-    );
-  }
-
-  // FUNCIÓN ACTUALIZADA PARA ACEPTAR NAVEGACIÓN
-  Widget _menuTile(String title, VoidCallback onTap) {
-    return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 16, color: Colors.black87),
-      ),
-      onTap: onTap,
     );
   }
 

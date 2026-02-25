@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+// Importación del menú centralizado según tu estructura
+import '../../shared/widgets/common/menu_lateral.dart';
 
-// Asegúrate de que el nombre de la clase sea NominasPage (N Mayúscula)
 class NominasPage extends StatefulWidget {
   const NominasPage({super.key});
 
@@ -40,12 +41,12 @@ class _NominasPageState extends State<NominasPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      // LLAMADA AL MENÚ CENTRALIZADO
+      drawer: const MenuLateral(),
       appBar: AppBar(
         backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF007AFF)),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // El icono del menú (hamburguesa) aparecerá automáticamente gracias al drawer
+        iconTheme: const IconThemeData(color: Color(0xFF007AFF)),
         title: const Text('Nóminas', style: TextStyle(color: Colors.white)),
         elevation: 0,
       ),
@@ -72,7 +73,7 @@ class _NominasPageState extends State<NominasPage> {
               height: 55,
               child: ElevatedButton(
                 onPressed: () {
-                  // Lógica para descargar PDF en el futuro
+                  // Lógica futura para ver PDF
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007AFF),
@@ -117,9 +118,12 @@ class _NominasPageState extends State<NominasPage> {
           icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF007AFF)),
           isExpanded: true,
           style: const TextStyle(color: Colors.white, fontSize: 16),
-          items: items.map((String item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
-          }).toList(),
+          items: items
+              .map(
+                (String item) =>
+                    DropdownMenuItem<String>(value: item, child: Text(item)),
+              )
+              .toList(),
           onChanged: onChanged,
         ),
       ),
