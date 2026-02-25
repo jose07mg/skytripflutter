@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
+// Importación del menú centralizado según tu estructura de carpetas
+import '../../shared/widgets/common/menu_lateral.dart';
 
 class TareasScreen extends StatefulWidget {
   const TareasScreen({super.key});
@@ -9,7 +10,6 @@ class TareasScreen extends StatefulWidget {
 }
 
 class _TareasScreenState extends State<TareasScreen> {
-  // Variables para la lógica de tareas (ejemplo de filtros)
   String? _selectedCategoria;
   String? _selectedEstado;
 
@@ -26,61 +26,24 @@ class _TareasScreenState extends State<TareasScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
 
-      // --- MENÚ LATERAL INTEGRADO ---
-      drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.45,
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const SizedBox(height: 20),
-              _menuTile('Fichar', () => Navigator.pop(context)),
-
-              _menuTile('Nóminas', () {
-                Navigator.pop(context);
-                // Lógica de navegación aquí
-              }),
-
-              _menuTile('Vacaciones', () {}),
-              _menuTile('Manuales', () {
-                Navigator.pop(context);
-                // Aquí iría el Navigator.push a ManualesScreen
-              }),
-              _menuTile('Albaranes', () {}),
-              _menuTile('Gastos', () {}),
-              _menuTile('Tareas', () => Navigator.pop(context)),
-              const Divider(),
-              ListTile(
-                title: const Text(
-                  'Cerrar Sesión',
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                onTap: () {
-                  developer.log('Cerrando sesión...');
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+      // LLAMADA AL MENÚ CENTRALIZADO
+      drawer: const MenuLateral(),
 
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        // iconTheme en azul para que el icono del menú sea visible sobre negro
+        // El icono del menú (hamburguesa) aparecerá automáticamente gracias al drawer
         iconTheme: const IconThemeData(color: Color(0xFF2196F3), size: 30),
         title: const Text('Tareas', style: TextStyle(color: Colors.white)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2.0),
           child: Container(
-            // Solución al aviso azul de 'withOpacity'
+            // Mantenemos la corrección de rendimiento .withValues
             color: const Color(0xFF2196F3).withValues(alpha: 0.5),
             height: 2.0,
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
         child: Column(
@@ -93,9 +56,7 @@ class _TareasScreenState extends State<TareasScreen> {
               items: _categorias,
               onChanged: (val) => setState(() => _selectedCategoria = val),
             ),
-
             const SizedBox(height: 16),
-
             // Filtro de Estado
             _buildSafeDropdown(
               hint: "Estado de la tarea",
@@ -103,15 +64,11 @@ class _TareasScreenState extends State<TareasScreen> {
               items: _estados,
               onChanged: (val) => setState(() => _selectedEstado = val),
             ),
-
             const SizedBox(height: 24),
-
             // Botón de Acción
             ElevatedButton(
               onPressed: () {
-                if (_selectedCategoria != null) {
-                  developer.log('Buscando tareas de tipo: $_selectedCategoria');
-                }
+                // Lógica para filtrar o buscar tareas
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF007BFF),
@@ -126,10 +83,8 @@ class _TareasScreenState extends State<TareasScreen> {
                 style: TextStyle(fontSize: 18),
               ),
             ),
-
             const SizedBox(height: 40),
-
-            // Texto informativo o lista vacía
+            // Mensaje de estado vacío
             const Center(
               child: Text(
                 'No hay tareas pendientes para hoy',
@@ -142,31 +97,20 @@ class _TareasScreenState extends State<TareasScreen> {
     );
   }
 
-  // --- WIDGETS AUXILIARES ---
-
-  Widget _menuTile(String title, VoidCallback onTap) {
-    return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.black, fontSize: 16),
-      ),
-      onTap: onTap,
-    );
-  }
-
+  // Widget auxiliar para construir selectores con diseño personalizado
   Widget _buildSafeDropdown({
     required String hint,
     required String? value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
-    // Esta validación previene la pantalla roja de error en Web
+    // Validación para prevenir errores si el valor no coincide con los items
     final String? validatedValue = items.contains(value) ? value : null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF101C2B), // Tono oscuro igual al de la imagen
+        color: const Color(0xFF101C2B),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white10),
       ),

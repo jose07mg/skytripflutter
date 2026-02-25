@@ -1,19 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
+// Importación del menú centralizado según tu estructura
+import '../../shared/widgets/common/menu_lateral.dart';
 
 class GastosPage extends StatelessWidget {
   const GastosPage({super.key});
-
-  // Widget auxiliar para las opciones del menú lateral
-  Widget _menuTile(String title, VoidCallback onTap) {
-    return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.black, fontSize: 16),
-      ),
-      onTap: onTap,
-    );
-  }
 
   // Widget auxiliar para los botones de la cuadrícula de gastos
   Widget _buildGastoButton(IconData icon, String label) {
@@ -21,7 +11,6 @@ class GastosPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(10),
-        // SUSTITUCIÓN DE withOpacity: Usamos RGBA para evitar el error
         border: Border.all(color: const Color.fromRGBO(158, 158, 158, 0.2)),
       ),
       child: Material(
@@ -29,7 +18,7 @@ class GastosPage extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: () {
-            // Sin funcionalidad por ahora
+            // Lógica para las funciones de gastos
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -51,55 +40,23 @@ class GastosPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
-      // --- MENÚ LATERAL INTEGRADO ---
-      drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.45,
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const SizedBox(height: 20),
-              _menuTile('Fichar', () => Navigator.pop(context)),
-              _menuTile('Nóminas', () => Navigator.pop(context)),
-              _menuTile('Vacaciones', () => Navigator.pop(context)),
-              _menuTile('Manuales', () => Navigator.pop(context)),
-              _menuTile('Albaranes', () => Navigator.pop(context)),
-              _menuTile('Gastos', () => Navigator.pop(context)),
-              _menuTile('Tareas', () => Navigator.pop(context)),
-              const Divider(),
-              ListTile(
-                title: const Text(
-                  'Cerrar Sesión',
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                onTap: () {
-                  developer.log('Cerrando sesión...');
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      // --- APPBAR CON ESTILO TAREAS ---
+      // LLAMADA AL MENÚ CENTRALIZADO
+      drawer: const MenuLateral(),
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+        // El icono del menú aparecerá automáticamente al asignar el drawer
         iconTheme: const IconThemeData(color: Color(0xFF2196F3), size: 30),
         title: const Text('Gastos', style: TextStyle(color: Colors.white)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2.0),
           child: Container(
-            // SUSTITUCIÓN DE withValues/withOpacity: Color directo con transparencia (80 en Hex = 50%)
+            // Uso de transparencia directa para evitar avisos de depreciación
             color: const Color(0x802196F3),
             height: 2.0,
           ),
         ),
       ),
-
-      // --- CUERPO DE LA INTERFAZ GASTOS ---
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
