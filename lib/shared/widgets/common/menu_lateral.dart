@@ -8,6 +8,8 @@ import '../../../features/vacaciones/vacaciones.dart';
 import '../../../features/manuales/manuales.dart';
 import '../../../features/tareas/tareas.dart';
 
+import '../../../features/auth/auth_service.dart';
+
 class MenuLateral extends StatelessWidget {
   const MenuLateral({super.key});
 
@@ -103,7 +105,14 @@ class MenuLateral extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              onTap: () {
+              onTap: () async {
+                // Usamos el AuthService para cerrar la sesión
+                await AuthService().signOut();
+
+                // Se comprueba si el widget sigue montado antes de usar el context.
+                if (!context.mounted) return;
+
+                // Navegamos al login y eliminamos todas las rutas anteriores
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   '/login',

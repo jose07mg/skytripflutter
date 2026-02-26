@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 /// Excepción propia de autenticación (sin depender de Firebase).
 class AuthException implements Exception {
@@ -10,45 +13,54 @@ class AuthException implements Exception {
   String toString() => 'AuthException: $message';
 }
 
-/// Servicio de autenticación simple que no usa Firebase.
+/// Servicio de autenticación que se conecta a la API.
 ///
-/// Por ahora solo valida que email y contraseña no estén vacíos
-/// y simula un "login" exitoso.
+/// Gestiona el token de autenticación y el estado del usuario.
 class AuthService {
-  String? _currentUserEmail;
+  // Hacemos el servicio un Singleton para que haya una única instancia
+  // y estado de autenticación en toda la app.
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
 
-  String? get currentUser => _currentUserEmail;
+  String? _token;
 
-  // Iniciar sesión con email y contraseña
-  Future<void> signInWithEmailAndPassword({
-    required String email,
+  /// Devuelve `true` si el usuario está autenticado (tiene un token).
+  bool get isAuthenticated => _token != null;
+
+  /// Iniciar sesión con nombre de usuario y contraseña.
+  Future<void> signInWithUsernameAndPassword({
+    required String username,
     required String password,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (email.isEmpty || password.isEmpty) {
-      debugPrint(
-        'AuthService.signInWithEmailAndPassword -> credenciales vacías',
-      );
+    if (username.isEmpty || password.isEmpty) {
       throw AuthException('Credenciales inválidas');
     }
 
-    _currentUserEmail = email;
-    debugPrint('AuthService.signInWithEmailAndPassword -> login simulado OK');
-  }
+    final url = Uri.parse('http://localhost/RMSmira_api/public/login');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      body: json.encode({'username': username, 'password': password}),
+    );
 
-  // Registro con email y contraseña (por ahora se comporta igual que el login).
-  Future<void> createUserWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    await signInWithEmailAndPassword(email: email, password: password);
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      _token = responseData['token'];
+      if (_token == null) {
+        throw AuthException('La respuesta del servidor no contiene un token.');
+      }
+      debugPrint('AuthService -> Login exitoso, token guardado.');
+    } else {
+      // Lanza una excepción para que la UI pueda reaccionar.
+      throw AuthException('Usuario o contraseña incorrectos');
+    }
   }
 
   // Cerrar sesión
   Future<void> signOut() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    _currentUserEmail = null;
-    debugPrint('AuthService.signOut -> logout simulado OK');
+    // Limpiamos el token y notificamos.
+    _token = null;
+    debugPrint('AuthService -> Sesión cerrada, token eliminado.');
   }
 }

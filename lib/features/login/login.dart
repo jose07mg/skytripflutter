@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // Importamos la Home para poder navegar a ella directamente
 import '../../../features/home/home.dart';
+import '../auth/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,16 +13,29 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
-  void _login() {
-    String user = _userController.text;
+  Future<void> _login() async {
+    // Evita múltiples peticiones si ya hay una en curso
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    String username = _userController.text;
     String password = _passwordController.text;
 
-    // Validación de credenciales
-    if (user == "Usuario" && password == "admin") {
-      // MODIFICACIÓN AQUÍ:
-      // Usamos MaterialPageRoute con RouteSettings para que el menú
-      // sepa que la ruta actual es '/home' y se ilumine en gris.
+    try {
+      await _authService.signInWithUsernameAndPassword(
+        username: username,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      // Si el login es exitoso, navegamos a Home
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -29,14 +43,25 @@ class _LoginPageState extends State<LoginPage> {
           settings: const RouteSettings(name: '/home'),
         ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Usuario o contraseña incorrectos'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } on AuthException catch (e) {
+      // Si hay un error de autenticación, lo mostramos y limpiamos el campo
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
       _passwordController.clear();
+    } catch (e) {
+      // Captura otros errores (red, etc.)
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error de conexión: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -102,21 +127,28 @@ class _LoginPageState extends State<LoginPage> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _login,
+                onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007AFF),
+                  disabledBackgroundColor: const Color(
+                    0xFF007AFF,
+                  ).withValues(alpha: 0.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Iniciar Sesión',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : const Text(
+                        'Iniciar Sesión',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
