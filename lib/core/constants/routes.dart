@@ -7,4 +7,5 @@ class Routes {
   static const tareas = '/tareas';
   static const vacaciones = '/vacaciones';
   static const albaranes = '/albaranes';
+  static const calendario = '/calendario';
 }

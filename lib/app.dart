@@ -9,6 +9,7 @@ import 'features/manuales/manuales.dart';
 import 'features/tareas/tareas.dart';
 import 'features/vacaciones/vacaciones.dart';
 import 'features/albaranes/albaranes.dart';
+import 'features/calendario/calendario.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -29,6 +30,7 @@ class MyApp extends StatelessWidget {
         Routes.tareas: (context) => const TareasScreen(),
         Routes.vacaciones: (context) => const VacacionesPage(),
         Routes.albaranes: (context) => const AlbaranesPage(),
+        Routes.calendario: (context) => const CalendarioPage(),
       },
     );
   }
