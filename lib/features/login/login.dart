@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-// Importamos la Home para poder navegar a ella directamente
-import '../../../features/home/home.dart';
 import '../auth/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -36,13 +34,9 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       // Si el login es exitoso, navegamos a Home
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomePage(),
-          settings: const RouteSettings(name: '/home'),
-        ),
-      );
+      // Usamos la ruta nombrada para que sea consistente con el resto de la app
+      // y respete cualquier lógica de enrutamiento global.
+      Navigator.pushReplacementNamed(context, '/home');
     } on AuthException catch (e) {
       // Si hay un error de autenticación, lo mostramos y limpiamos el campo
       if (!mounted) return;
