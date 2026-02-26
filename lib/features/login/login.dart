@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// Importamos la Home para poder navegar a ella directamente
+import '../../../features/home/home.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,17 +19,23 @@ class _LoginPageState extends State<LoginPage> {
 
     // Validación de credenciales
     if (user == "Usuario" && password == "admin") {
-      // Si son correctas, navega a Home
-      Navigator.pushReplacementNamed(context, '/home');
+      // MODIFICACIÓN AQUÍ:
+      // Usamos MaterialPageRoute con RouteSettings para que el menú
+      // sepa que la ruta actual es '/home' y se ilumine en gris.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HomePage(),
+          settings: const RouteSettings(name: '/home'),
+        ),
+      );
     } else {
-      // Si son erróneas, muestra el mensaje de error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Usuario o contraseña incorrectos'),
           backgroundColor: Colors.red,
         ),
       );
-      // Opcional: limpiar la contraseña para reintentar
       _passwordController.clear();
     }
   }
@@ -41,7 +49,15 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('images/logo.png', height: 120, fit: BoxFit.contain),
+            // He ajustado la ruta del asset a 'assets/images/logo.png'
+            // para que coincida con la estructura de tu HomePage
+            Image.asset(
+              'assets/images/logo.png',
+              height: 120,
+              fit: BoxFit.contain,
+              errorBuilder: (c, e, s) =>
+                  const Icon(Icons.business, color: Colors.white, size: 120),
+            ),
             const SizedBox(height: 50),
             const Text(
               'Usuario',
@@ -51,6 +67,7 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _userController,
               textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
@@ -70,6 +87,7 @@ class _LoginPageState extends State<LoginPage> {
               controller: _passwordController,
               obscureText: true,
               textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
