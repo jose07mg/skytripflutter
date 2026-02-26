@@ -83,3 +83,8 @@ flutter test /app/test/widget_test.dart
 ```bash
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
+
+## release 
+```bash
+flutter run --realease
+```
