@@ -8,6 +8,8 @@ import '../../../features/vacaciones/vacaciones.dart';
 import '../../../features/manuales/manuales.dart';
 import '../../../features/tareas/tareas.dart';
 
+import '../../../features/auth/auth_service.dart';
+
 class MenuLateral extends StatelessWidget {
   const MenuLateral({super.key});
 
@@ -103,7 +105,14 @@ class MenuLateral extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              onTap: () {
+              onTap: () async {
+                // Usamos el AuthService para cerrar la sesión
+                await AuthService().signOut();
+
+                // Se comprueba si el widget sigue montado antes de usar el context.
+                if (!context.mounted) return;
+
+                // Navegamos al login y eliminamos todas las rutas anteriores
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   '/login',
@@ -157,15 +166,9 @@ class MenuLateral extends StatelessWidget {
         onTap: isActive
             ? null
             : () {
-                Navigator.pop(context); // Cierra el menú
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => page,
-                    // ESTO ES LO MÁS IMPORTANTE: Le da nombre a la ruta para que el menú la reconozca
-                    settings: RouteSettings(name: routeName),
-                  ),
-                );
+                // Usamos navegación por nombre para pasar por el AuthGuard.
+                // El menú se cierra automáticamente al reemplazar la ruta.
+                Navigator.pushReplacementNamed(context, routeName);
               },
       ),
     );
