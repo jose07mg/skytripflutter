@@ -49,8 +49,8 @@ class _AuthPageState extends State<AuthPage> {
     });
 
     try {
-      await _authService.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
+      await _authService.signInWithUsernameAndPassword(
+        username: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 

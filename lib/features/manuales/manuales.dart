@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 
@@ -12,9 +14,54 @@ class ManualesScreen extends StatefulWidget {
 class _ManualesScreenState extends State<ManualesScreen> {
   String? _selectedMarca;
   String? _selectedModelo;
+  bool _isLoadingMarcas = true;
 
-  final List<String> _marcas = ["Sony", "Blackmagic", "Panasonic", "Canon"];
+  List<String> _marcas = [];
   final List<String> _modelos = ["Cámara 4K", "Monitor OLED", "Mezclador Pro"];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMarcas();
+  }
+
+  Future<void> _fetchMarcas() async {
+    // Nota: Para emuladores de Android, 'localhost' debe ser '10.0.2.2'.
+    // Para web o emulador de iOS, 'localhost' suele funcionar correctamente.
+    const url = 'http://localhost/RMSmira_api/public/manuales/marcas';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // Asumimos que la API devuelve un JSON con una lista de objetos, ej: [{"id": 1, "nombre": "Sony"}, ...]
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _marcas = data.map((item) => item['nombre'].toString()).toList();
+          _isLoadingMarcas = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingMarcas = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cargar las marcas desde el servidor.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMarcas = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo conectar al servidor: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +89,19 @@ class _ManualesScreenState extends State<ManualesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSafeDropdown(
-              hint: "Selecciona una marca",
-              value: _selectedMarca,
-              items: _marcas,
-              onChanged: (val) => setState(() => _selectedMarca = val),
-            ),
+            _isLoadingMarcas
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : _buildSafeDropdown(
+                    hint: "Selecciona una marca",
+                    value: _selectedMarca,
+                    items: _marcas,
+                    onChanged: (val) => setState(() => _selectedMarca = val),
+                  ),
             const SizedBox(height: 16),
             _buildSafeDropdown(
               hint: "Selecciona un modelo",
