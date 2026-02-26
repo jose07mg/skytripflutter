@@ -6,7 +6,7 @@ services:
       target: build-env
     container_name: rms-dev
     ports:
-      - "8080:8080"
+      - "9000:8080"
     volumes:
       - .:/app
       - /app/.dart_tool/
