@@ -166,15 +166,9 @@ class MenuLateral extends StatelessWidget {
         onTap: isActive
             ? null
             : () {
-                Navigator.pop(context); // Cierra el menú
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => page,
-                    // ESTO ES LO MÁS IMPORTANTE: Le da nombre a la ruta para que el menú la reconozca
-                    settings: RouteSettings(name: routeName),
-                  ),
-                );
+                // Usamos navegación por nombre para pasar por el AuthGuard.
+                // El menú se cierra automáticamente al reemplazar la ruta.
+                Navigator.pushReplacementNamed(context, routeName);
               },
       ),
     );
