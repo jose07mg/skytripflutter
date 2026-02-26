@@ -7,6 +7,7 @@ import '../../../features/gastos/gastos.dart';
 import '../../../features/vacaciones/vacaciones.dart';
 import '../../../features/manuales/manuales.dart';
 import '../../../features/tareas/tareas.dart';
+import '../../../features/calendario/calendario.dart';
 
 class MenuLateral extends StatelessWidget {
   const MenuLateral({super.key});
@@ -25,6 +26,7 @@ class MenuLateral extends StatelessWidget {
             // --- RESTAURAMOS TUS OPCIONES DE MENÚ ---
             _menuTile(context, 'Fichar', const HomePage()),
             _menuTile(context, 'Nóminas', const NominasPage()),
+            _menuTile(context, 'Calendario', const CalendarioPage()),
             _menuTile(context, 'Vacaciones', const VacacionesPage()),
             _menuTile(context, 'Manuales', const ManualesScreen()),
             _menuTile(context, 'Albaranes', const AlbaranesPage()),
