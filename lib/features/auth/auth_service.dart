@@ -1,34 +1,29 @@
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-/// Excepción propia de autenticación (sin depender de Firebase).
 class AuthException implements Exception {
   final String message;
-
   AuthException(this.message);
-
   @override
   String toString() => 'AuthException: $message';
 }
 
-/// Servicio de autenticación que se conecta a la API.
-///
-/// Gestiona el token de autenticación y el estado del usuario.
 class AuthService {
-  // Hacemos el servicio un Singleton para que haya una única instancia
-  // y estado de autenticación en toda la app.
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
   String? _token;
+  String? _role; // <--- SE HA INSERTADO ESTA LÍNEA
 
-  /// Devuelve `true` si el usuario está autenticado (tiene un token).
   bool get isAuthenticated => _token != null;
 
-  /// Iniciar sesión con nombre de usuario y contraseña.
+  // ESTOS MÉTODOS SE HAN INSERTADO PARA DIFERENCIAR ROLES
+  bool get isAdmin => _role == 'admin';
+  bool get isUser => _role == 'user';
+  String? get role => _role;
+
   Future<void> signInWithUsernameAndPassword({
     required String username,
     required String password,
@@ -47,20 +42,22 @@ class AuthService {
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
       _token = responseData['token'];
+
+      // SE HA INSERTADO ESTA LÍNEA PARA CAPTURAR EL ROL DESDE TU API PHP
+      _role = responseData['role'];
+
       if (_token == null) {
         throw AuthException('La respuesta del servidor no contiene un token.');
       }
-      debugPrint('AuthService -> Login exitoso, token guardado.');
+      debugPrint('AuthService -> Login exitoso como: $_role');
     } else {
-      // Lanza una excepción para que la UI pueda reaccionar.
       throw AuthException('Usuario o contraseña incorrectos');
     }
   }
 
-  // Cerrar sesión
   Future<void> signOut() async {
-    // Limpiamos el token y notificamos.
     _token = null;
-    debugPrint('AuthService -> Sesión cerrada, token eliminado.');
+    _role = null; // SE HA INSERTADO ESTO PARA LIMPIAR EL ROL AL SALIR
+    debugPrint('AuthService -> Sesión cerrada.');
   }
 }
