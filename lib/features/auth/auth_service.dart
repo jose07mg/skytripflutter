@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../core/constants/api_constants.dart';
 
 class AuthException implements Exception {
   final String message;
@@ -32,7 +33,7 @@ class AuthService {
       throw AuthException('Credenciales inválidas');
     }
 
-    final url = Uri.parse('http://localhost/RMSmira_api/public/login');
+    final url = Uri.parse('${ApiConstants.baseUrl}/login');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json; charset=UTF-8'},

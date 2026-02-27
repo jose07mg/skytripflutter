@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../core/constants/api_constants.dart';
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 
@@ -28,7 +29,7 @@ class _ManualesScreenState extends State<ManualesScreen> {
   Future<void> _fetchMarcas() async {
     // Nota: Para emuladores de Android, 'localhost' debe ser '10.0.2.2'.
     // Para web o emulador de iOS, 'localhost' suele funcionar correctamente.
-    const url = 'http://localhost/RMSmira_api/public/manuales/marcas';
+    final url = '${ApiConstants.baseUrl}/manuales/marcas';
 
     try {
       final response = await http.get(Uri.parse(url));
