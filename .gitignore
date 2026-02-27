@@ -51,6 +51,5 @@ linux/
 macos/
 windows/
 build/
-# API Config
-lib/core/constants/api_constants.dart
+
 
