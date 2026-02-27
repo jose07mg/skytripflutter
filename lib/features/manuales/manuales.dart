@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../core/constants/api_constants.dart';
+import 'package:rms/core/constants/api_constants.dart';
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 

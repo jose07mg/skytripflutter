@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../../core/constants/api_constants.dart';
+import 'package:rms/core/constants/api_constants.dart';
 
 class AuthException implements Exception {
   final String message;
