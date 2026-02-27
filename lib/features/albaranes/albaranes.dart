@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart'; // Importante: Requiere "flutter pub add url_launcher"
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 
@@ -19,23 +20,33 @@ class AlbaranesPage extends StatelessWidget {
     final albaranes = List.generate(8, (index) => "ALBA01001-E");
 
     return Scaffold(
-      backgroundColor: Colors.black,
-
+      backgroundColor: Colors.black, // Fondo negro puro solicitado
       // LLAMADA AL MENÚ CENTRALIZADO
       drawer: const MenuLateral(),
 
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.black, // Cambiado fondo a negro
         // El icono del menú (hamburguesa) aparecerá automáticamente gracias al drawer
-        iconTheme: const IconThemeData(color: Colors.blue, size: 30),
+        iconTheme: const IconThemeData(
+          color: Colors.blue,
+          size: 30,
+        ), // Icono azul
         title: const Text('Albaranes', style: TextStyle(color: Colors.white)),
+        // Añadimos la linea azul inferior
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.blue[800], // Línea divisoria azul oscura
+            height: 1.0,
+          ),
+        ),
       ),
       body: Column(
         children: [
           const Padding(
             padding: EdgeInsets.all(20.0),
             child: Text(
-              'Pendientes por firmar',
+              'Entregas Pendientes',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -47,44 +58,161 @@ class AlbaranesPage extends StatelessWidget {
             child: ListView.builder(
               itemCount: albaranes.length,
               itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 8,
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              SignaturePage(albaranId: albaranes[index]),
-                        ),
-                      );
-                    },
-                    child: Center(
-                      child: Text(
-                        albaranes[index],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
+                return AlbaranCard(albaranId: albaranes[index]);
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// --- WIDGET TARJETA DE ALBARÁN ---
+class AlbaranCard extends StatelessWidget {
+  final String albaranId;
+
+  const AlbaranCard({super.key, required this.albaranId});
+
+  // Método para abrir el mapa
+  Future<void> _abrirMapa(BuildContext context) async {
+    // URL de ejemplo con coordenadas en Madrid (puedes cambiarlo por una dirección real)
+    final Uri url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=40.4168,-3.7038',
+    );
+
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir el mapa')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al abrir el mapa: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SignaturePage(albaranId: albaranId),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161E2E), // Fondo de la tarjeta oscuro
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.blueAccent.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blueAccent.withValues(alpha: 0.15),
+                blurRadius: 10,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Contenido Izquierdo
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.person, color: Colors.white, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          'Juan García',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.description,
+                          color: Colors.grey[400],
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          albaranId,
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Separador vertical
+              Container(
+                height: 45,
+                width: 1,
+                color: Colors.grey.withValues(alpha: 0.3),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              // Botón "Ver Mapa"
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _abrirMapa(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.location_on, color: Colors.white, size: 22),
+                      SizedBox(height: 4),
+                      Text(
+                        'VER MAPA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
