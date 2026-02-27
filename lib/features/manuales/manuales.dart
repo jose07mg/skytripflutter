@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:rms/core/constants/api_constants.dart';
+import '../../core/constants/api_constants.dart';
+import '../auth/auth_service.dart';
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 
@@ -32,15 +33,31 @@ class _ManualesScreenState extends State<ManualesScreen> {
     final url = '${ApiConstants.baseUrl}/manuales/marcas';
 
     try {
-      final response = await http.get(Uri.parse(url));
+      // Obtenemos el token actual
+      final token = AuthService().token;
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Enviamos el token al servidor
+        },
+      );
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        // Asumimos que la API devuelve un JSON con una lista de objetos, ej: [{"id": 1, "nombre": "Sony"}, ...]
-        final List<dynamic> data = json.decode(response.body);
+        final dynamic responseBody = json.decode(response.body);
+
+        // Adaptamos a tu respuesta: {"success": true, "data": [...]}
+        final List<dynamic> data =
+            (responseBody is Map && responseBody.containsKey('data'))
+            ? responseBody['data']
+            : [];
+
         setState(() {
-          _marcas = data.map((item) => item['nombre'].toString()).toList();
+          // Mapeamos el campo 'marca' que viene en tu JSON
+          _marcas = data.map((item) => item['marca'].toString()).toList();
           _isLoadingMarcas = false;
         });
       } else {
