@@ -11,7 +11,7 @@ class Punto {
 }
 
 // --- PANTALLA PRINCIPAL DE ALBARANES ---
-class AlbaranesPage extends StatelessWidget {
+class AlbaranesPage extends StatelessWidget { 
   const AlbaranesPage({super.key});
 
   @override
