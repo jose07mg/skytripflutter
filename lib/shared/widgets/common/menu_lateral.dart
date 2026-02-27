@@ -36,7 +36,7 @@ class MenuLateral extends StatelessWidget {
                 children: [
                   _menuTile(
                     context,
-                    'Fichar',
+                    'Fichaje',
                     Icons.timer,
                     const HomePage(),
                     '/home',

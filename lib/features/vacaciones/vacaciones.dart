@@ -97,6 +97,14 @@ class _VacacionesPageState extends State<VacacionesPage> {
         // El icono de menú aparecerá automáticamente al asignar el drawer
         iconTheme: const IconThemeData(color: Colors.blue, size: 30),
         title: const Text('Vacaciones', style: TextStyle(color: Colors.white)),
+        // Añadimos la linea azul inferior
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.blue[800], // Línea divisoria azul oscura
+            height: 1.0,
+          ),
+        ),
       ),
 
       body: Padding(

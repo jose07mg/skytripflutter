@@ -49,6 +49,14 @@ class _NominasPageState extends State<NominasPage> {
         iconTheme: const IconThemeData(color: Color(0xFF007AFF)),
         title: const Text('Nóminas', style: TextStyle(color: Colors.white)),
         elevation: 0,
+        // Añadimos la linea azul inferior
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.blue[800], // Línea divisoria azul oscura
+            height: 1.0,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
