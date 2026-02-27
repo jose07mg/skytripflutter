@@ -180,7 +180,15 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.blue, size: 30),
-        title: const Text('Fichar', style: TextStyle(color: Colors.white)),
+        title: const Text('Fichaje', style: TextStyle(color: Colors.white)),
+        // Añadimos la linea azul inferior
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.blue[800], // Línea divisoria azul oscura
+            height: 1.0,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         // Añadido por si el texto ocupa mucho espacio
@@ -250,15 +258,15 @@ class _HomePageState extends State<HomePage> {
 
             // --- BOTONES ---
             if (!_isStarted) ...[
-              _actionButton('Iniciar Jornada', Colors.blue, _startWork),
+              _actionButton('Iniciar', Colors.blue, _startWork),
             ] else ...[
               _actionButton(
-                _isPaused ? 'Reanudar Jornada' : 'Pausar (Descanso)',
+                _isPaused ? 'Reanudar' : 'Descanso',
                 _isPaused ? Colors.green : Colors.orange.shade700,
                 _pauseResume,
               ),
               const SizedBox(height: 20),
-              _actionButton('Finalizar Jornada', Colors.red, _finishJornada),
+              _actionButton('Finalizar', Colors.red, _finishJornada),
             ],
           ],
         ),
