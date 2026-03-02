@@ -11,31 +11,45 @@ class NominasPage extends StatefulWidget {
 
 class _NominasPageState extends State<NominasPage> {
   String? selectedYear;
-  String? selectedMonth;
 
-  final List<String> years = [
-    '2020',
-    '2021',
-    '2022',
-    '2023',
-    '2024',
-    '2025',
-    '2026',
+  // Variables estáticas simuladas (en producción esto vendría de API/BBDD)
+  final int currentYear = 2026;
+  final int currentMonth = 3; // Marzo
+
+  final List<String> years = ['2022', '2023', '2024', '2025', '2026'];
+
+  final List<String> indexToMonth = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
   ];
-  final List<String> months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Por defecto marcamos el año actual
+    selectedYear = currentYear.toString();
+  }
+
+  // Lógica para determinar qué meses mostrar
+  List<String> get monthsToShow {
+    if (selectedYear == currentYear.toString()) {
+      // Si es el año actual, mostramos solo hasta el mes actual
+      return indexToMonth.sublist(0, currentMonth);
+    } else {
+      // Si es otro año, mostramos todos los meses
+      return indexToMonth;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,49 +72,134 @@ class _NominasPageState extends State<NominasPage> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-        child: Column(
-          children: [
-            _buildDropdown(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 20.0,
+            ),
+            child: _buildDropdown(
               hint: 'Seleccionar Año',
               value: selectedYear,
               items: years,
-              onChanged: (val) => setState(() => selectedYear = val),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => selectedYear = val);
+                }
+              },
             ),
-            const SizedBox(height: 20),
-            _buildDropdown(
-              hint: 'Seleccionar Mes',
-              value: selectedMonth,
-              items: months,
-              onChanged: (val) => setState(() => selectedMonth = val),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Lógica futura para ver PDF
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007AFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Ver PDF de Nómina',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 5.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Nóminas Disponibles',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10.0,
+              ),
+              itemCount: monthsToShow.length,
+              itemBuilder: (context, index) {
+                // Usamos el índice directamente para orden ascendente (Enero primero)
+                final monthName = monthsToShow[index];
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161E2E),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0x669E9E9E), // Borde suave
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0x33007AFF,
+                                ), // Fondo azul claro
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.picture_as_pdf,
+                                color: Color(0xFF007AFF),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Nómina $monthName',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Año $selectedYear',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Acción para descargar o ver el PDF de ese mes
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF007AFF),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            minimumSize: Size.zero,
+                          ),
+                          child: const Text(
+                            'Ver',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
