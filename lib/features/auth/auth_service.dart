@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:rms/core/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthException implements Exception {
   final String message;
@@ -26,6 +27,12 @@ class AuthService {
   String? get role => _role;
   String? get token => _token;
 
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString('auth_token');
+    _role = prefs.getString('auth_role');
+  }
+
   Future<void> signInWithUsernameAndPassword({
     required String username,
     required String password,
@@ -45,12 +52,19 @@ class AuthService {
       final responseData = json.decode(response.body);
       _token = responseData['token'];
 
-      // SE HA INSERTADO ESTA LÍNEA PARA CAPTURAR EL ROL DESDE TU API PHP
+      // SE HA INSERTADO ESTA LÍNEA PARA CAPTURAR EL ROL DESDE TU API PHP ---
       _role = responseData['role'];
 
       if (_token == null) {
         throw AuthException('La respuesta del servidor no contiene un token.');
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', _token!);
+      if (_role != null) {
+        await prefs.setString('auth_role', _role!);
+      }
+
       debugPrint('AuthService -> Login exitoso como: $_role');
     } else {
       throw AuthException('Usuario o contraseña incorrectos');
@@ -60,6 +74,11 @@ class AuthService {
   Future<void> signOut() async {
     _token = null;
     _role = null; // SE HA INSERTADO ESTO PARA LIMPIAR EL ROL AL SALIR
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('auth_role');
+
     debugPrint('AuthService -> Sesión cerrada.');
   }
 }
