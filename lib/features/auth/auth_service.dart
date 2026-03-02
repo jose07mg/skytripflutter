@@ -20,7 +20,7 @@ class AuthService {
 
   bool get isAuthenticated => _token != null;
 
-  // ESTOS MÉTODOS SE HAN INSERTADO PARA LOS ROLES
+  // ESTOS MÉTODOS SE HAN INSERTADO PARA OBTENER LOS ROLES
   bool get isAdmin => _role == 'admin';
   bool get isUser => _role == 'user';
   String? get role => _role;

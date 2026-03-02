@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'features/auth/auth_guard.dart';
 import 'features/login/login.dart';
 
-// --- Importaciones de las páginas de la aplicación ---
+// --- Importaciones de las páginas de la aplicacion ---
 import 'features/home/home.dart';
 import 'features/calendario/calendario.dart';
 import 'features/nominas/nominas.dart';

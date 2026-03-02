@@ -34,7 +34,7 @@ flutter:
     - assets/animations/
 
   fonts:
-    - family: Roboto
+    - family: Roboto  
       fonts:
         - asset: assets/fonts/Roboto-Regular.ttf
         - asset: assets/fonts/Roboto-Bold.ttf
