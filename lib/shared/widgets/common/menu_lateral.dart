@@ -5,6 +5,7 @@ import '../../../features/nominas/nominas.dart';
 import '../../../features/albaranes/albaranes.dart';
 import '../../../features/gastos/gastos.dart';
 import '../../../features/vacaciones/vacaciones.dart';
+import '../../../features/calendario/calendario.dart';
 import '../../../features/manuales/manuales.dart';
 import '../../../features/tareas/tareas.dart';
 
@@ -56,6 +57,14 @@ class MenuLateral extends StatelessWidget {
                     Icons.beach_access,
                     const VacacionesPage(),
                     '/vacaciones',
+                    currentRoute,
+                  ),
+                  _menuTile(
+                    context,
+                    'Calendario',
+                    Icons.calendar_month,
+                    const CalendarioPage(),
+                    '/calendario',
                     currentRoute,
                   ),
                   _menuTile(

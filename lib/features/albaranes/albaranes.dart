@@ -118,12 +118,12 @@ class AlbaranCard extends StatelessWidget {
             color: const Color(0xFF161E2E), // Fondo de la tarjeta oscuro
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.blueAccent.withValues(alpha: 0.5),
+              color: const Color(0x80448AFF), // blueAccent con 0.5
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.blueAccent.withValues(alpha: 0.15),
+                color: const Color(0x26448AFF), // blueAccent con 0.15
                 blurRadius: 10,
                 spreadRadius: 1,
               ),
@@ -175,7 +175,7 @@ class AlbaranCard extends StatelessWidget {
               Container(
                 height: 45,
                 width: 1,
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: const Color(0x4D9E9E9E), // grey con 0.3
                 margin: const EdgeInsets.symmetric(horizontal: 16),
               ),
               // Botón "Ver Mapa"
@@ -190,7 +190,7 @@ class AlbaranCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.grey.withValues(alpha: 0.4),
+                      color: const Color(0x669E9E9E), // grey con 0.4
                     ),
                   ),
                   child: const Column(

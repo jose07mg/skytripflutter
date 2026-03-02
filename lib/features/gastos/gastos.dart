@@ -52,7 +52,7 @@ class GastosPage extends StatelessWidget {
           preferredSize: const Size.fromHeight(2.0),
           child: Container(
             // Uso de transparencia directa para evitar avisos de depreciación
-            color: const Color(0x802196F3),
+            color: const Color(0x802196F3), // Azul con 0.5 (80 en hex)
             height: 2.0,
           ),
         ),

@@ -74,8 +74,7 @@ class _VacacionesPageState extends State<VacacionesPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Cierra el aviso
-              Navigator.pop(context); // Vuelve a la pantalla anterior
+              Navigator.pop(context); // Cierra solo el aviso (AlertDialog)
             },
             child: const Text('Aceptar'),
           ),
