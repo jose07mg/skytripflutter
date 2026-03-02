@@ -5,5 +5,5 @@ class ApiConstants {
   // Para emulador Android: 'http://10.0.2.2/RMSmira_api/public'
   // Para emulador iOS o Web: 'http://localhost/RMSmira_api/public'
 
-  static const String baseUrl = 'https://miradigital.es/RMSmira_api/public';
+  static const String baseUrl = 'http://localhost/RMSmira_api/public';
 }
