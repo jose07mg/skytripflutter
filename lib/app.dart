@@ -13,7 +13,6 @@ import 'features/manuales/manuales.dart';
 import 'features/tareas/tareas.dart';
 import 'features/albaranes/albaranes.dart';
 import 'features/vacaciones/vacaciones.dart';
-import 'features/calendario/calendario.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -46,7 +45,6 @@ class MyApp extends StatelessWidget {
         '/tareas': (context) => const AuthGuard(child: TareasScreen()),
         '/albaranes': (context) => const AuthGuard(child: AlbaranesPage()),
         '/vacaciones': (context) => const AuthGuard(child: VacacionesPage()),
-        '/calendario': (context) => const AuthGuard(child: CalendarioPage()),
       },
     );
   }
