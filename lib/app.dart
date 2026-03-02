@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'features/auth/auth_guard.dart';
 import 'features/login/login.dart';
 
-// --- Importaciones de las páginas de la aplicación ---
+// --- Importaciones de las páginas de la aplicacion ---
 import 'features/home/home.dart';
+import 'features/calendario/calendario.dart';
 import 'features/nominas/nominas.dart';
 import 'features/gastos/gastos.dart';
 import 'features/manuales/manuales.dart';
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         // Todas están envueltas con AuthGuard. Si intentas acceder sin token,
         // te redirigirá a /login.
         '/home': (context) => const AuthGuard(child: HomePage()),
+        '/calendario': (context) => const AuthGuard(child: CalendarioPage()),
         '/nominas': (context) => const AuthGuard(child: NominasPage()),
         '/gastos': (context) => const AuthGuard(child: GastosPage()),
         '/manuales': (context) => const AuthGuard(child: ManualesScreen()),
