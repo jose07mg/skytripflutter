@@ -45,7 +45,7 @@ class AuthService {
       final responseData = json.decode(response.body);
       _token = responseData['token'];
 
-      // SE HA INSERTADO ESTA LÍNEA PARA CAPTURAR EL ROL DESDE TU API PHP
+      // SE HA INSERTADO ESTA LÍNEA PARA CAPTURAR EL ROL DESDE TU API PHP ---
       _role = responseData['role'];
 
       if (_token == null) {

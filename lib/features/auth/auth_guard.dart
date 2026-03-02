@@ -10,7 +10,7 @@ class AuthGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Verificamos si el usuario está autenticado usando el Singleton
     if (!AuthService().isAuthenticated) {
-      // Si no tiene token, lo redirigimos al login inmediatamente
+      // Si no tiene token, lo redirigimos al login inmediatamente ---
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(
           context,

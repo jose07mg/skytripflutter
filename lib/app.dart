@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
         // --- RUTA PÚBLICA ---
         '/login': (context) => const LoginPage(),
 
-        // --- RUTAS PROTEGIDAS ---
+        // --- RUTAS PROTEGIDAS ----
         // Todas están envueltas con AuthGuard. Si intentas acceder sin token,
         // te redirigirá a /login.
         '/home': (context) => const AuthGuard(child: HomePage()),
