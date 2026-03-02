@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart'; // Importante: Requiere "flutter pub add url_launcher"
+import '../../core/constants/api_constants.dart';
+import '../auth/auth_service.dart';
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 
@@ -20,28 +24,96 @@ class AlbaranesPage extends StatefulWidget {
 
 class _AlbaranesPageState extends State<AlbaranesPage> {
   int _botonSeleccionado = 0; // 0: Entregas, 1: Devoluciones
+  List<dynamic> _albaranes = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAlbaranes();
+  }
+
+  Future<void> _fetchAlbaranes() async {
+    // Usamos el endpoint que indicaste asegurando la baseUrl
+    // Si ApiConstants.baseUrl ya apunta a public, esto funcionará.
+    // Por si acaso, usamos directamente la url que proporcionaste si prefieres,
+    // pero lo mejor es usar la constante centralizada:
+    final url = '${ApiConstants.baseUrl}/albaranes';
+
+    try {
+      final token = AuthService().token;
+      debugPrint('=== FETCH ALBARANES ===');
+      debugPrint('URL: $url');
+      debugPrint('Token disponible: ${token != null}');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Body: ${response.body}');
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final dynamic responseBody = json.decode(response.body);
+
+        final List<dynamic> data =
+            (responseBody is Map && responseBody.containsKey('data'))
+            ? responseBody['data']
+            : (responseBody is List ? responseBody : []);
+
+        setState(() {
+          _albaranes = data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+
+        String errorMsg = 'Error al cargar albaranes (${response.statusCode})';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData['error'] != null) {
+            errorMsg = errorData['error'];
+          } else if (errorData['message'] != null) {
+            errorMsg = errorData['message'];
+          }
+        } catch (_) {}
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      debugPrint('Excepción en fetchAlbaranes: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error de conexión: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Simulación de lista de albaranes de entregas
-    final albaranesEntregas = List.generate(
-      8,
-      (index) => {
-        "id": "ALBA01001-E",
-        "fecha": "02/03/2026",
-        "estado": index % 2 == 0 ? "Pendiente" : "Facturado",
-      },
-    );
+    // Filtramos las entregas y devoluciones basado en un posible campo 'tipo' de la BD.
+    // Si la API no devuelve un campo 'tipo', todos caerán en 'Entregas' por defecto
+    // o se pueden ajustar las condiciones de filtrado.
+    final albaranesEntregas = _albaranes.where((a) {
+      final fechaEntrega = a['entrega']?.toString() ?? '';
+      // Volvemos a mostrar por defecto si ambos campos son nulos, pero filtramos si hay fecha
+      return fechaEntrega.isNotEmpty ||
+          (a['entrega'] == null && a['devolucion'] == null);
+    }).toList();
 
-    // Simulación de lista de albaranes de devoluciones
-    final albaranesDevoluciones = List.generate(
-      5,
-      (index) => {
-        "id": "DEV02001-D",
-        "fecha": "01/03/2026",
-        "estado": index % 2 != 0 ? "Pendiente" : "Facturado",
-      },
-    );
+    final albaranesDevoluciones = _albaranes.where((a) {
+      final fechaDevolucion = a['devolucion']?.toString() ?? '';
+      return fechaDevolucion.isNotEmpty;
+    }).toList();
 
     final albaranesActuales = _botonSeleccionado == 0
         ? albaranesEntregas
@@ -157,17 +229,57 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: ListView.builder(
-              itemCount: albaranesActuales.length,
-              itemBuilder: (context, index) {
-                final albaran = albaranesActuales[index];
-                return AlbaranCard(
-                  albaranId: albaran["id"]!,
-                  fecha: albaran["fecha"]!,
-                  estado: albaran["estado"]!,
-                );
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : albaranesActuales.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No hay albaranes disponibles.',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: albaranesActuales.length,
+                    itemBuilder: (context, index) {
+                      final albaran = albaranesActuales[index];
+
+                      // Extraemos los datos basándonos en la estructura de la base de datos proporcionada
+                      final String numAlbaran =
+                          albaran['numalbaran']?.toString() ?? 'Sin Ref';
+
+                      // Mostramos la fecha de entrega si es pestaña de entregas, o la de devolución si es pestaña devoluciones, y si no cae en fecha albarán
+                      String fecha = _botonSeleccionado == 0
+                          ? (albaran['entrega']?.toString() ??
+                                albaran['fechaalbaran']?.toString() ??
+                                'Sin fecha')
+                          : (albaran['devolucion']?.toString() ??
+                                albaran['fechaalbaran']?.toString() ??
+                                'Sin fecha');
+
+                      if (fecha.length > 10) fecha = fecha.substring(0, 10);
+
+                      final String idCliente =
+                          albaran['idcliente']?.toString() ?? '-';
+                      final String idContacto =
+                          albaran['idcontacto']?.toString() ?? '-';
+                      final String numPunto =
+                          albaran['numpto']?.toString() ?? '';
+
+                      final bool estaFirmado =
+                          albaran['albaranfirmado'] != null;
+                      final String estado = estaFirmado
+                          ? 'Firmado'
+                          : 'Pendiente';
+
+                      return AlbaranCard(
+                        numAlbaran: numAlbaran,
+                        fechaAlbaran: fecha,
+                        clienteInfo: 'Cliente: $idCliente / Cont: $idContacto',
+                        punto: numPunto,
+                        estado: estado,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -177,14 +289,18 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
 
 // --- WIDGET TARJETA DE ALBARÁN ---
 class AlbaranCard extends StatelessWidget {
-  final String albaranId;
-  final String fecha;
+  final String numAlbaran;
+  final String fechaAlbaran;
+  final String clienteInfo;
+  final String punto;
   final String estado;
 
   const AlbaranCard({
     super.key,
-    required this.albaranId,
-    required this.fecha,
+    required this.numAlbaran,
+    required this.fechaAlbaran,
+    required this.clienteInfo,
+    required this.punto,
     required this.estado,
   });
 
@@ -222,7 +338,7 @@ class AlbaranCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SignaturePage(albaranId: albaranId),
+              builder: (context) => SignaturePage(albaranId: numAlbaran),
             ),
           );
         },
@@ -250,16 +366,19 @@ class AlbaranCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.person, color: Colors.white, size: 22),
-                        SizedBox(width: 8),
-                        Text(
-                          'Juan García',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        const Icon(Icons.person, color: Colors.white, size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            clienteInfo,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -274,7 +393,7 @@ class AlbaranCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          albaranId,
+                          numAlbaran,
                           style: TextStyle(
                             color: Colors.grey[400],
                             fontSize: 14,
@@ -292,7 +411,7 @@ class AlbaranCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          fecha,
+                          fechaAlbaran,
                           style: TextStyle(
                             color: Colors.grey[400],
                             fontSize: 14,
@@ -300,6 +419,26 @@ class AlbaranCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (punto.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_city,
+                            color: Colors.grey[400],
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            punto,
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     // Botón de estado
                     InkWell(
