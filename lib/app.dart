@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 // --- Importaciones de utilidades y autenticación ---
 import 'features/auth/auth_guard.dart';
+import 'features/auth/auth_service.dart';
 import 'features/login/login.dart';
 
 // --- Importaciones de las páginas de la aplicacion ---
@@ -27,8 +28,8 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.black,
         // ... otros estilos que quieras unificar
       ),
-      // La ruta inicial es el login.
-      initialRoute: '/login',
+      // La ruta inicial depende de si el usuario ya está autenticado.
+      initialRoute: AuthService().isAuthenticated ? '/home' : '/login',
       // Definición de todas las rutas de la aplicación.
       routes: {
         // --- RUTA PÚBLICA ---
