@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:rms/core/constants/api_constants.dart';
+import '../../core/constants/api_constants.dart';
+import '../auth/auth_service.dart';
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
 
@@ -13,12 +14,13 @@ class ManualesScreen extends StatefulWidget {
 }
 
 class _ManualesScreenState extends State<ManualesScreen> {
-  String? _selectedMarca;
-  String? _selectedModelo;
+  int? _selectedMarca; // Cambiamos a int para guardar el ID
+  int? _selectedModelo; // Cambiamos a int para guardar el ID
   bool _isLoadingMarcas = true;
+  bool _isLoadingModelos = false;
 
-  List<String> _marcas = [];
-  final List<String> _modelos = ["Cámara 4K", "Monitor OLED", "Mezclador Pro"];
+  List<dynamic> _marcas = []; // Lista de objetos completos
+  List<dynamic> _modelos = []; // Lista de objetos completos
 
   @override
   void initState() {
@@ -32,15 +34,31 @@ class _ManualesScreenState extends State<ManualesScreen> {
     final url = '${ApiConstants.baseUrl}/manuales/marcas';
 
     try {
-      final response = await http.get(Uri.parse(url));
+      // Obtenemos el token actual
+      final token = AuthService().token;
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Enviamos el token al servidor
+        },
+      );
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        // Asumimos que la API devuelve un JSON con una lista de objetos, ej: [{"id": 1, "nombre": "Sony"}, ...]
-        final List<dynamic> data = json.decode(response.body);
+        final dynamic responseBody = json.decode(response.body);
+
+        // Adaptamos a tu respuesta: {"success": true, "data": [...]}
+        final List<dynamic> data =
+            (responseBody is Map && responseBody.containsKey('data'))
+            ? responseBody['data']
+            : [];
+
         setState(() {
-          _marcas = data.map((item) => item['nombre'].toString()).toList();
+          // Guardamos el objeto completo para tener acceso al ID
+          _marcas = data;
           _isLoadingMarcas = false;
         });
       } else {
@@ -61,6 +79,54 @@ class _ManualesScreenState extends State<ManualesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('No se pudo conectar al servidor: $e')),
       );
+    }
+  }
+
+  Future<void> _fetchModelos(int marcaId) async {
+    setState(() {
+      _isLoadingModelos = true;
+      _modelos = [];
+      _selectedModelo = null;
+    });
+
+    // Usamos la URL que indicaste: .../manuales/equipos?marca_id=ID
+    final url = '${ApiConstants.baseUrl}/manuales/equipos?marca_id=$marcaId';
+
+    try {
+      final token = AuthService().token;
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final dynamic responseBody = json.decode(response.body);
+        final List<dynamic> data =
+            (responseBody is Map && responseBody.containsKey('data'))
+            ? responseBody['data']
+            : (responseBody is List ? responseBody : []);
+
+        setState(() {
+          _modelos = data;
+          _isLoadingModelos = false;
+        });
+      } else {
+        setState(() => _isLoadingModelos = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cargar modelos.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingModelos = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error de conexión: $e')));
     }
   }
 
@@ -97,19 +163,30 @@ class _ManualesScreenState extends State<ManualesScreen> {
                       child: CircularProgressIndicator(),
                     ),
                   )
-                : _buildSafeDropdown(
+                : _buildObjectDropdown(
                     hint: "Selecciona una marca",
                     value: _selectedMarca,
                     items: _marcas,
-                    onChanged: (val) => setState(() => _selectedMarca = val),
+                    labelKey: 'marca',
+                    onChanged: (val) {
+                      setState(() => _selectedMarca = val);
+                      if (val != null) {
+                        _fetchModelos(val); // Cargamos modelos al elegir marca
+                      }
+                    },
                   ),
             const SizedBox(height: 16),
-            _buildSafeDropdown(
-              hint: "Selecciona un modelo",
-              value: _selectedModelo,
-              items: _modelos,
-              onChanged: (val) => setState(() => _selectedModelo = val),
-            ),
+            _isLoadingModelos
+                ? const Center(child: CircularProgressIndicator())
+                : _buildObjectDropdown(
+                    hint: "Selecciona un modelo",
+                    value: _selectedModelo,
+                    items: _modelos,
+                    labelKey:
+                        'modelo', // Asumimos que el campo se llama 'modelo' (o 'nombre')
+                    onChanged: (val) => setState(() => _selectedModelo = val),
+                    isDisabled: _modelos.isEmpty,
+                  ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
@@ -134,35 +211,50 @@ class _ManualesScreenState extends State<ManualesScreen> {
     );
   }
 
-  // Widget auxiliar para construir los selectores con validación de seguridad
-  Widget _buildSafeDropdown({
+  // Widget auxiliar para construir los selectores manejando objetos (ID/Nombre)
+  Widget _buildObjectDropdown({
     required String hint,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required int? value,
+    required List<dynamic> items,
+    required String labelKey,
+    required ValueChanged<int?> onChanged,
+    bool isDisabled = false,
   }) {
     // Validación para evitar errores de aserción si el valor no está en la lista
-    final String? validatedValue = items.contains(value) ? value : null;
+    final bool valueExists = items.any((item) => item['id'] == value);
+    final int? validatedValue = valueExists ? value : null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF101C2B),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: isDisabled
+              ? Colors.white10
+              : Colors.blue.withValues(alpha: 0.3),
+        ),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
+        child: DropdownButton<int>(
           value: validatedValue,
-          hint: Text(hint, style: const TextStyle(color: Colors.grey)),
+          hint: Text(
+            isDisabled ? "Sin modelos disponibles" : hint,
+            style: const TextStyle(color: Colors.grey),
+          ),
           dropdownColor: const Color(0xFF101C2B),
           icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF2196F3)),
           isExpanded: true,
           style: const TextStyle(color: Colors.white, fontSize: 16),
-          onChanged: onChanged,
-          items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          onChanged: isDisabled ? null : onChanged,
+          items: items.map<DropdownMenuItem<int>>((item) {
+            // Intentamos obtener el nombre usando labelKey, o 'nombre' como respaldo
+            String label =
+                item[labelKey]?.toString() ??
+                item['nombre']?.toString() ??
+                'Item ${item['id']}';
+            return DropdownMenuItem<int>(value: item['id'], child: Text(label));
+          }).toList(),
         ),
       ),
     );

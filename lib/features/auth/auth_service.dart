@@ -24,6 +24,7 @@ class AuthService {
   bool get isAdmin => _role == 'admin';
   bool get isUser => _role == 'user';
   String? get role => _role;
+  String? get token => _token;
 
   Future<void> signInWithUsernameAndPassword({
     required String username,
