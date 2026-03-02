@@ -11,13 +11,41 @@ class Punto {
 }
 
 // --- PANTALLA PRINCIPAL DE ALBARANES ---
-class AlbaranesPage extends StatelessWidget {
+class AlbaranesPage extends StatefulWidget {
   const AlbaranesPage({super.key});
 
   @override
+  State<AlbaranesPage> createState() => _AlbaranesPageState();
+}
+
+class _AlbaranesPageState extends State<AlbaranesPage> {
+  int _botonSeleccionado = 0; // 0: Entregas, 1: Devoluciones
+
+  @override
   Widget build(BuildContext context) {
-    // Simulación de lista de albaranes
-    final albaranes = List.generate(8, (index) => "ALBA01001-E");
+    // Simulación de lista de albaranes de entregas
+    final albaranesEntregas = List.generate(
+      8,
+      (index) => {
+        "id": "ALBA01001-E",
+        "fecha": "02/03/2026",
+        "estado": index % 2 == 0 ? "Pendiente" : "Facturado",
+      },
+    );
+
+    // Simulación de lista de albaranes de devoluciones
+    final albaranesDevoluciones = List.generate(
+      5,
+      (index) => {
+        "id": "DEV02001-D",
+        "fecha": "01/03/2026",
+        "estado": index % 2 != 0 ? "Pendiente" : "Facturado",
+      },
+    );
+
+    final albaranesActuales = _botonSeleccionado == 0
+        ? albaranesEntregas
+        : albaranesDevoluciones;
 
     return Scaffold(
       backgroundColor: Colors.black, // Fondo negro puro solicitado
@@ -42,23 +70,102 @@ class AlbaranesPage extends StatelessWidget {
         ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(20.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 20.0,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _botonSeleccionado = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _botonSeleccionado == 0
+                            ? Colors.blue[800]
+                            : const Color(0xFF161E2E),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _botonSeleccionado == 0
+                              ? Colors.blue
+                              : const Color(0x669E9E9E),
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Entregas',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _botonSeleccionado = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _botonSeleccionado == 1
+                            ? Colors.blue[800]
+                            : const Color(0xFF161E2E),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _botonSeleccionado == 1
+                              ? Colors.blue
+                              : const Color(0x669E9E9E),
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Devoluciones',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 5.0,
+            ),
             child: Text(
-              'Entregas Pendientes',
-              style: TextStyle(
+              _botonSeleccionado == 0 ? 'Entregas' : 'Devoluciones',
+              style: const TextStyle(
                 color: Colors.white,
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
+          const SizedBox(height: 10),
           Expanded(
             child: ListView.builder(
-              itemCount: albaranes.length,
+              itemCount: albaranesActuales.length,
               itemBuilder: (context, index) {
-                return AlbaranCard(albaranId: albaranes[index]);
+                final albaran = albaranesActuales[index];
+                return AlbaranCard(
+                  albaranId: albaran["id"]!,
+                  fecha: albaran["fecha"]!,
+                  estado: albaran["estado"]!,
+                );
               },
             ),
           ),
@@ -71,8 +178,15 @@ class AlbaranesPage extends StatelessWidget {
 // --- WIDGET TARJETA DE ALBARÁN ---
 class AlbaranCard extends StatelessWidget {
   final String albaranId;
+  final String fecha;
+  final String estado;
 
-  const AlbaranCard({super.key, required this.albaranId});
+  const AlbaranCard({
+    super.key,
+    required this.albaranId,
+    required this.fecha,
+    required this.estado,
+  });
 
   // Método para abrir el mapa
   Future<void> _abrirMapa(BuildContext context) async {
@@ -156,17 +270,70 @@ class AlbaranCard extends StatelessWidget {
                         Icon(
                           Icons.description,
                           color: Colors.grey[400],
-                          size: 18,
+                          size: 16,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Text(
                           albaranId,
                           style: TextStyle(
                             color: Colors.grey[400],
-                            fontSize: 15,
+                            fontSize: 14,
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          color: Colors.grey[400],
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          fecha,
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Botón de estado
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        // Acción al presionar el estado
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: estado == 'Pendiente'
+                              ? Colors.orange.withValues(alpha: 0.2)
+                              : Colors.green.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: estado == 'Pendiente'
+                                ? Colors.orange
+                                : Colors.green,
+                          ),
+                        ),
+                        child: Text(
+                          estado.toUpperCase(),
+                          style: TextStyle(
+                            color: estado == 'Pendiente'
+                                ? Colors.orange
+                                : Colors.green,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
