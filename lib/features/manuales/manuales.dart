@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../auth/auth_service.dart';
 // Importación del menú centralizado según tu estructura de carpetas
@@ -16,8 +17,7 @@ class ManualesScreen extends StatefulWidget {
 class _ManualesScreenState extends State<ManualesScreen> {
   int? _selectedMarca; // Cambiamos a int para guardar el ID
   int? _selectedModelo; // Cambiamos a int para guardar el ID
-  String? _selectedImageUrl; // Nueva variable para la imagen
-  bool _showImage = false; // Nueva variable para controlar la visibilidad
+  bool _isFetchingManual = false; // Estado para el botón de mostrar manual
   bool _isLoadingMarcas = true;
   bool _isLoadingModelos = false;
 
@@ -33,6 +33,7 @@ class _ManualesScreenState extends State<ManualesScreen> {
   Future<void> _fetchMarcas() async {
     // Nota: Para emuladores de Android, 'localhost' debe ser '10.0.2.2'.
     // Para web o emulador de iOS, 'localhost' suele funcionar correctamente.
+    // Usamos baseUrl para apuntar al entorno de desarrollo local (localhost, 10.0.2.2, etc.)
     final url = '${ApiConstants.baseUrl}/manuales/marcas';
 
     try {
@@ -78,8 +79,9 @@ class _ManualesScreenState extends State<ManualesScreen> {
       setState(() {
         _isLoadingMarcas = false;
       });
+      // Log detallado para depuración.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo conectar al servidor: $e')),
+        SnackBar(content: Text('Error de conexión al cargar marcas: $e')),
       );
     }
   }
@@ -92,6 +94,7 @@ class _ManualesScreenState extends State<ManualesScreen> {
     });
 
     // Usamos la URL que indicaste: .../manuales/equipos?marca_id=ID
+    // Usamos baseUrl para apuntar al entorno de desarrollo local
     final url = '${ApiConstants.baseUrl}/manuales/equipos?marca_id=$marcaId';
 
     try {
@@ -126,9 +129,82 @@ class _ManualesScreenState extends State<ManualesScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingModelos = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error de conexión al cargar modelos: $e')),
+      );
+    }
+  }
+
+  // --- OBTENER Y LANZAR MANUAL ---
+  // Al pulsar el botón, busca la URL del manual y la abre.
+  Future<void> _fetchAndLaunchManual() async {
+    if (_selectedModelo == null || _isFetchingManual) return;
+
+    setState(() {
+      _isFetchingManual = true;
+    });
+
+    // Endpoint correcto según tu API: /manuales/equipo/manual?id=X
+    final url =
+        '${ApiConstants.baseUrl}/manuales/equipo/manual?id=$_selectedModelo';
+
+    try {
+      final token = AuthService().token;
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        // La API devuelve: {"success": true, "data": {"documento": "path/to.pdf"}}
+        final String? relativePath = responseBody['data']?['documento'];
+
+        if (relativePath != null && relativePath.isNotEmpty) {
+          // Construimos la URL completa. Asumimos que el path es relativo a la carpeta public.
+          final fullFileUrl = '${ApiConstants.baseUrl}/$relativePath';
+          await _launchManual(fullFileUrl);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Este modelo no tiene un manual asignado.'),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al obtener el manual: ${response.statusCode}'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error de conexión: $e')));
+    } finally {
+      if (mounted) setState(() => _isFetchingManual = false);
+    }
+  }
+
+  // --- LANZADOR DE URL ---
+  // Abre el manual (PDF, imagen, etc.) en una aplicación externa (navegador, visor de PDF).
+  Future<void> _launchManual(String fileUrl) async {
+    final Uri url = Uri.parse(fileUrl);
+    if (!await canLaunchUrl(url)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir el archivo: $fileUrl')),
+        );
+      }
+    } else {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -155,154 +231,81 @@ class _ManualesScreenState extends State<ManualesScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _isLoadingMarcas
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                : _buildObjectDropdown(
-                    hint: "Selecciona una marca",
-                    value: _selectedMarca,
-                    items: _marcas,
-                    labelKey: 'marca',
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedMarca = val;
-                        _selectedImageUrl =
-                            null; // Reset image when changing marca
-                      });
-                      if (val != null) {
-                        _fetchModelos(val); // Cargamos modelos al elegir marca
-                      }
-                    },
-                  ),
-            const SizedBox(height: 16),
-            _isLoadingModelos
-                ? const Center(child: CircularProgressIndicator())
-                : _buildObjectDropdown(
-                    hint: "Selecciona un modelo",
-                    value: _selectedModelo,
-                    items: _modelos,
-                    labelKey:
-                        'modelo', // Asumimos que el campo se llama 'modelo' (o 'nombre')
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedModelo = val;
-                        _showImage =
-                            false; // Ocultamos la imagen al cambiar modelo
-                        // Buscamos el objeto del modelo seleccionado para obtener su imagen
-                        final selectedObj = _modelos.firstWhere(
-                          (m) => m['id'] == val,
-                          orElse: () => null,
-                        );
-                        if (selectedObj != null) {
-                          String? relativePath =
-                              selectedObj['imagen'] ?? selectedObj['foto'];
-                          if (relativePath != null && relativePath.isNotEmpty) {
-                            // Según tu captura, la ruta es "imgequipos/...", suele estar en la raiz o en la carpeta del api
-                            // Probamos con la URL base de la API (ajustando según sea necesario)
-                            // Si la captura de Postman muestra que funciona directo, usaremos la raiz del dominio + el path
-                            // Usamos el baseUrl de ApiConstants para asegurar que incluimos /public/ si es necesario
-                            // Si baseUrl termina en /public, la imagen suele colgar de ahí
-                            _selectedImageUrl =
-                                '${ApiConstants.baseUrl}/$relativePath';
-                          } else {
-                            _selectedImageUrl = null;
-                          }
-                        } else {
-                          _selectedImageUrl = null;
-                        }
-                      });
-                    },
-                    isDisabled: _modelos.isEmpty,
-                  ),
-            const SizedBox(height: 24),
-
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _showImage = true; // Mostramos la imagen al pulsar
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF007BFF),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text(
-                'Mostrar manual',
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Mostrar la imagen del modelo si se ha pulsado el botón y existe
-            if (_showImage &&
-                _selectedImageUrl != null &&
-                _selectedImageUrl!.isNotEmpty) ...[
-              Center(
-                child: Container(
-                  width: double.infinity,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161E2E), // Fondo oscuro coherente
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: const Color(0x4D2196F3), // Azul con ~30% opacidad
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(
-                          0x1A2196F3,
-                        ), // Azul con ~10% opacidad
-                        blurRadius: 10,
-                        spreadRadius: 2,
+        child: SingleChildScrollView(
+          // Para evitar overflow si el manual es grande
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _isLoadingMarcas
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        child: CircularProgressIndicator(),
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: Image.network(
-                      _selectedImageUrl!,
-                      fit: BoxFit.contain, // Para ver el modelo completo
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey,
-                              size: 50,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              "Imagen no disponible",
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        );
+                    )
+                  : _buildObjectDropdown(
+                      hint: "Selecciona una marca",
+                      value: _selectedMarca,
+                      items: _marcas,
+                      labelKey: 'marca',
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedMarca = val; // Guardamos la nueva marca
+                          _selectedModelo =
+                              null; // Reseteamos el modelo al cambiar de marca
+                        });
+                        if (val != null) {
+                          _fetchModelos(
+                            val,
+                          ); // Cargamos modelos al elegir marca
+                        }
                       },
                     ),
+              const SizedBox(height: 16),
+              _isLoadingModelos
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildObjectDropdown(
+                      hint: "Selecciona un modelo",
+                      value: _selectedModelo,
+                      items: _modelos,
+                      labelKey:
+                          'modelo', // Asumimos que el campo se llama 'modelo' (o 'nombre')
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedModelo = val;
+                        });
+                      },
+                      isDisabled: _modelos.isEmpty,
+                    ),
+              const SizedBox(height: 24),
+
+              ElevatedButton(
+                // El botón se activa solo si hay un modelo seleccionado
+                onPressed: _selectedModelo == null || _isFetchingManual
+                    ? null
+                    : _fetchAndLaunchManual,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007BFF),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 55),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  // Estilo para cuando el botón está desactivado
+                  disabledBackgroundColor: Colors.grey[800],
                 ),
+                child: _isFetchingManual
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : const Text(
+                        'Mostrar manual',
+                        style: TextStyle(fontSize: 18),
+                      ),
               ),
+              const SizedBox(height: 24),
             ],
-          ],
+          ),
         ),
       ),
     );
