@@ -84,8 +84,8 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
           }
         } catch (_) {}
 
-        // Future.delayed para evitar error de aserción 'window.dart' en Flutter Web
-        Future.delayed(Duration.zero, () {
+        // Evitar error de aserción 'window.dart' en Flutter Web asegurando que el frame esté listo
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
@@ -98,12 +98,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
       setState(() => _isLoading = false);
       debugPrint('Excepción en fetchAlbaranes: $e');
 
-      // Un Future.delayed evita el error de aserción 'window.dart' en la web
-      // que ocurre al mostrar SnackBars inmediatamente después de un error de red.
-      Future.delayed(Duration.zero, () {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error de conexión obteniendo albaranes')),
+            const SnackBar(
+              content: Text('Error de conexión obteniendo albaranes'),
+            ),
           );
         }
       });
@@ -122,10 +122,7 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
           (a['entrega'] == null && a['devolucion'] == null);
     }).toList();
 
-    final albaranesDevoluciones = _albaranes.where((a) {
-      final fechaDevolucion = a['devolucion']?.toString() ?? '';
-      return fechaDevolucion.isNotEmpty;
-    }).toList();
+    final albaranesDevoluciones = [];
 
     final albaranesActuales = _botonSeleccionado == 0
         ? albaranesEntregas
@@ -133,6 +130,8 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
 
     return Scaffold(
       backgroundColor: Colors.black, // Fondo negro puro solicitado
+      resizeToAvoidBottomInset:
+          false, // Prevents window.dart _viewInsets.isNonNegative crash on Web
       // LLAMADA AL MENÚ CENTRALIZADO
       drawer: const MenuLateral(),
 
@@ -257,38 +256,85 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
 
                       // Extraemos los datos basándonos en la estructura de la base de datos proporcionada
                       final String numAlbaran =
-                          albaran['numalbaran']?.toString() ?? 'Sin Ref';
+                          albaran['numalbaran']?.toString() ?? 'S/N';
 
-                      // Mostramos la fecha de entrega si es pestaña de entregas, o la de devolución si es pestaña devoluciones, y si no cae en fecha albarán
-                      String fecha = _botonSeleccionado == 0
-                          ? (albaran['entrega']?.toString() ??
-                                albaran['fechaalbaran']?.toString() ??
-                                'Sin fecha')
-                          : (albaran['devolucion']?.toString() ??
-                                albaran['fechaalbaran']?.toString() ??
-                                'Sin fecha');
+                      String numRegistro =
+                          albaran['fechaalbaran']?.toString() ?? 'S/N';
+                      if (numRegistro.length > 10 && numRegistro != 'S/N') {
+                        numRegistro = numRegistro.substring(0, 10);
+                      }
 
-                      if (fecha.length > 10) fecha = fecha.substring(0, 10);
+                      // numPresupuesto se elimina, su campo se reutilizará para numPunto
 
-                      final String idCliente =
-                          albaran['idcliente']?.toString() ?? '-';
-                      final String idContacto =
-                          albaran['idcontacto']?.toString() ?? '-';
+                      String fechaAlbaran =
+                          albaran['fechaalbaran']?.toString() ?? 'S/N';
+                      if (fechaAlbaran.length > 10 && fechaAlbaran != 'S/N') {
+                        fechaAlbaran = fechaAlbaran.substring(0, 10);
+                      }
+
+                      String fechaEntrega =
+                          albaran['entrega']?.toString() ?? 'S/N';
+                      if (fechaEntrega.length > 10 && fechaEntrega != 'S/N') {
+                        fechaEntrega = fechaEntrega.substring(0, 10);
+                      }
+
+                      String fechaSalida =
+                          albaran['devolucion']?.toString() ?? 'S/N';
+                      if (fechaSalida.length > 10 && fechaSalida != 'S/N') {
+                        fechaSalida = fechaSalida.substring(0, 10);
+                      }
+
+                      final String nombreRaw =
+                          albaran['nombre']?.toString() ?? '';
+                      final String nombre = nombreRaw.trim().isEmpty
+                          ? 'S/N'
+                          : nombreRaw;
+
+                      final String direccionRaw =
+                          albaran['direccionenvio']?.toString() ?? '';
+                      final String direccion = direccionRaw.trim().isEmpty
+                          ? 'S/N'
+                          : direccionRaw;
+
                       final String numPunto =
-                          albaran['numpto']?.toString() ?? '';
+                          albaran['numpto']?.toString() ?? 'S/N';
 
-                      final bool estaFirmado =
-                          albaran['albaranfirmado'] != null;
-                      final String estado = estaFirmado
-                          ? 'Firmado'
-                          : 'Pendiente';
+                      final String estadoRaw =
+                          albaran['estado']?.toString() ?? 'S/N';
+                      final String estado =
+                          estadoRaw.toLowerCase() == 'facturado'
+                          ? 'Facturado'
+                          : 'No facturado';
+
+                      final bool tienePdf = albaran['albaranpdf'] != null;
+                      final String pdfStatus = tienePdf ? 'S' : 'N';
+
+                      String telefono = '';
+                      if (albaran['telefono1'] != null &&
+                          albaran['telefono1'].toString().isNotEmpty) {
+                        telefono = albaran['telefono1'].toString();
+                      } else if (albaran['telefono2'] != null &&
+                          albaran['telefono2'].toString().isNotEmpty) {
+                        telefono = albaran['telefono2'].toString();
+                      } else if (albaran['telefono3'] != null &&
+                          albaran['telefono3'].toString().isNotEmpty) {
+                        telefono = albaran['telefono3'].toString();
+                      } else {
+                        telefono = 'S/N';
+                      }
 
                       return AlbaranCard(
                         numAlbaran: numAlbaran,
-                        fechaAlbaran: fecha,
-                        clienteInfo: 'Cliente: $idCliente / Cont: $idContacto',
-                        punto: numPunto,
+                        numRegistro: numRegistro,
+                        fechaEntrega: fechaEntrega,
+                        fechaSalida: fechaSalida,
+                        clienteInfo: nombre,
+                        direccion: direccion,
+                        punto:
+                            numPunto, // Ya no se renderizará suelto, pero dejamos el parámetro por si acaso
                         estado: estado,
+                        pdf: pdfStatus,
+                        telefono: telefono,
                       );
                     },
                   ),
@@ -302,41 +348,58 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
 // --- WIDGET TARJETA DE ALBARÁN ---
 class AlbaranCard extends StatelessWidget {
   final String numAlbaran;
-  final String fechaAlbaran;
+  final String numRegistro;
+  final String fechaEntrega;
+  final String fechaSalida;
   final String clienteInfo;
+  final String direccion;
   final String punto;
   final String estado;
+  final String pdf;
+  final String telefono;
 
   const AlbaranCard({
     super.key,
     required this.numAlbaran,
-    required this.fechaAlbaran,
+    required this.numRegistro,
+    required this.fechaEntrega,
+    required this.fechaSalida,
     required this.clienteInfo,
+    required this.direccion,
     required this.punto,
     required this.estado,
+    required this.pdf,
+    required this.telefono,
   });
 
   // Método para abrir el mapa
-  Future<void> _abrirMapa(BuildContext context) async {
-    // URL de ejemplo con coordenadas en Madrid (puedes cambiarlo por una dirección real)
+  Future<void> _abrirMapa(
+    BuildContext context,
+    String direccionConsulta,
+  ) async {
+    final query = Uri.encodeComponent(direccionConsulta);
     final Uri url = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=40.4168,-3.7038',
+      'https://www.google.com/maps/search/?api=1&query=$query',
     );
 
     try {
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo abrir el mapa')),
-          );
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No se pudo abrir el mapa')),
+            );
+          }
+        });
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al abrir el mapa: $e')));
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error al abrir el mapa: $e')));
+        }
+      });
     }
   }
 
@@ -344,192 +407,399 @@ class AlbaranCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SignaturePage(albaranId: numAlbaran),
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161E2E), // Fondo de la tarjeta oscuro
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0x80448AFF), // blueAccent con 0.5
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x26448AFF), // blueAccent con 0.15
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-            ],
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161E2E), // Fondo de la tarjeta oscuro
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0x80448AFF), // blueAccent con 0.5
+            width: 1.5,
           ),
-          child: Row(
-            children: [
-              // Contenido Izquierdo
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.person, color: Colors.white, size: 22),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            clienteInfo,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x26448AFF), // blueAccent con 0.15
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Contenido Izquierdo
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.person, color: Colors.white, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          clienteInfo,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.description,
-                          color: Colors.grey[400],
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          numAlbaran,
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: Colors.grey[400],
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          fechaAlbaran,
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (punto.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_city,
-                            color: Colors.grey[400],
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            punto,
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
-                    const SizedBox(height: 10),
-                    // Botón de estado
-                    InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        // Acción al presionar el estado
-                      },
-                      child: Container(
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.description,
+                        color: Colors.grey[400],
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Albarán: $numAlbaran',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.app_registration,
+                        color: Colors.grey[400],
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Registro: $numRegistro',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.request_quote,
+                        color: Colors.grey[400],
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Presupuesto: $punto',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_shipping,
+                        color: Colors.grey[400],
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Entrega: $fechaEntrega',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.outbox, color: Colors.grey[400], size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Devolución: $fechaSalida',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      // Pastilla de Estado
+                      Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: estado == 'Pendiente'
-                              ? Colors.orange.withValues(alpha: 0.2)
-                              : Colors.green.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
+                          color: estado == 'Facturado'
+                              ? Colors.green.withValues(alpha: 0.2)
+                              : (estado == 'No facturado'
+                                    ? Colors.orange.withValues(
+                                        alpha: 0.2,
+                                      ) // Color para No facturado
+                                    : Colors.grey.withValues(alpha: 0.2)),
                           border: Border.all(
-                            color: estado == 'Pendiente'
-                                ? Colors.orange
-                                : Colors.green,
+                            color: estado == 'Facturado'
+                                ? Colors.green
+                                : (estado == 'No facturado'
+                                      ? Colors.orange
+                                      : Colors.grey),
                           ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           estado.toUpperCase(),
                           style: TextStyle(
-                            color: estado == 'Pendiente'
-                                ? Colors.orange
-                                : Colors.green,
+                            color: estado == 'Facturado'
+                                ? Colors.green
+                                : (estado == 'No facturado'
+                                      ? Colors.orange
+                                      : Colors.grey),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              // Separador vertical
-              Container(
-                height: 45,
-                width: 1,
-                color: const Color(0x4D9E9E9E), // grey con 0.3
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              // Botón "Ver Mapa"
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _abrirMapa(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0x669E9E9E), // grey con 0.4
-                    ),
-                  ),
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.location_on, color: Colors.white, size: 22),
-                      SizedBox(height: 4),
-                      Text(
-                        'VER MAPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 8),
+
+                      // Pastilla de PDF (Interactuable si hay PDF)
+                      InkWell(
+                        onTap: pdf == 'S'
+                            ? () {
+                                // Aquí irá la lógica real para abrir el PDF
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Abriendo PDF del albarán $numAlbaran...',
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                });
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: pdf == 'S'
+                                ? Colors.red.withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.2),
+                            border: Border.all(
+                              color: pdf == 'S' ? Colors.red : Colors.grey,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.picture_as_pdf,
+                                color: pdf == 'S' ? Colors.red : Colors.grey,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                pdf == 'S' ? 'PDF' : 'S/N',
+                                style: TextStyle(
+                                  color: pdf == 'S' ? Colors.red : Colors.grey,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                     ],
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+            // Separador vertical
+            Container(
+              width: 1,
+              color: const Color(0x4D9E9E9E), // grey con 0.3
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            // Sector de Botones de Acción Derecha
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Botón VER MAPA
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: (direccion.isNotEmpty && direccion != 'S/N')
+                      ? () => _abrirMapa(context, direccion)
+                      : null,
+                  child: Container(
+                    width: 75,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (direccion.isNotEmpty && direccion != 'S/N')
+                          ? Colors.transparent
+                          : Colors.grey.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (direccion.isNotEmpty && direccion != 'S/N')
+                            ? const Color(0x669E9E9E) // grey con 0.4
+                            : Colors.grey,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: (direccion.isNotEmpty && direccion != 'S/N')
+                              ? Colors.white
+                              : Colors.grey,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'MAPA',
+                          style: TextStyle(
+                            color: (direccion.isNotEmpty && direccion != 'S/N')
+                                ? Colors.white
+                                : Colors.grey,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Botón de Llamar
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: telefono != 'S/N'
+                      ? () async {
+                          final Uri launchUri = Uri(
+                            scheme: 'tel',
+                            path: telefono,
+                          );
+                          await launchUrl(launchUri);
+                        }
+                      : null,
+                  child: Container(
+                    width: 75,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: telefono != 'S/N'
+                          ? Colors.blue.withValues(alpha: 0.2)
+                          : Colors.grey.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: telefono != 'S/N' ? Colors.blue : Colors.grey,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.phone,
+                          color: telefono != 'S/N' ? Colors.blue : Colors.grey,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'LLAMAR',
+                          style: TextStyle(
+                            color: telefono != 'S/N'
+                                ? Colors.blue
+                                : Colors.grey,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Botón FIRMAR
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            SignaturePage(albaranId: numAlbaran),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 75,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orangeAccent),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.draw, color: Colors.orangeAccent, size: 20),
+                        SizedBox(height: 4),
+                        Text(
+                          'FIRMAR',
+                          style: TextStyle(
+                            color: Colors.orangeAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
