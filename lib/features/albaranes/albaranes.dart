@@ -84,17 +84,29 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
           }
         } catch (_) {}
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-        );
+        // Future.delayed para evitar error de aserción 'window.dart' en Flutter Web
+        Future.delayed(Duration.zero, () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+            );
+          }
+        });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       debugPrint('Excepción en fetchAlbaranes: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error de conexión: $e')));
+
+      // Un Future.delayed evita el error de aserción 'window.dart' en la web
+      // que ocurre al mostrar SnackBars inmediatamente después de un error de red.
+      Future.delayed(Duration.zero, () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión obteniendo albaranes')),
+          );
+        }
+      });
     }
   }
 
