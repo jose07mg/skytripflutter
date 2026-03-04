@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/widgets/common/menu_lateral.dart';
 
 class HomePage extends StatefulWidget {
@@ -22,6 +23,71 @@ class _HomePageState extends State<HomePage> {
   // Variable para guardar el resultado del día y mostrarlo en pantalla
   String? _lastSessionSummary;
 
+  SharedPreferences? _prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPrefs();
+  }
+
+  Future<void> _initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+    _loadState();
+  }
+
+  void _loadState() {
+    if (_prefs == null) return;
+    setState(() {
+      _isStarted = _prefs!.getBool('isStarted') ?? false;
+      _isPaused = _prefs!.getBool('isPaused') ?? false;
+      int workSecs = _prefs!.getInt('workDuration') ?? 0;
+      int breakSecs = _prefs!.getInt('breakDuration') ?? 0;
+      int? lastTick = _prefs!.getInt('lastTickTime');
+      _selectedPauseReason = _prefs!.getString('selectedPauseReason');
+      _lastSessionSummary = _prefs!.getString('lastSessionSummary');
+
+      if (_isStarted && lastTick != null) {
+        int now = DateTime.now().millisecondsSinceEpoch;
+        int elapsedSecs = ((now - lastTick) / 1000).floor();
+        if (elapsedSecs > 0) {
+          if (_isPaused) {
+            breakSecs += elapsedSecs;
+          } else {
+            workSecs += elapsedSecs;
+          }
+        }
+      }
+
+      _workDuration = Duration(seconds: workSecs);
+      _breakDuration = Duration(seconds: breakSecs);
+    });
+
+    if (_isStarted) {
+      _saveState();
+      _runTimer();
+    }
+  }
+
+  void _saveState() {
+    if (_prefs == null) return;
+    _prefs!.setBool('isStarted', _isStarted);
+    _prefs!.setBool('isPaused', _isPaused);
+    _prefs!.setInt('workDuration', _workDuration.inSeconds);
+    _prefs!.setInt('breakDuration', _breakDuration.inSeconds);
+    _prefs!.setInt('lastTickTime', DateTime.now().millisecondsSinceEpoch);
+    if (_selectedPauseReason != null) {
+      _prefs!.setString('selectedPauseReason', _selectedPauseReason!);
+    } else {
+      _prefs!.remove('selectedPauseReason');
+    }
+    if (_lastSessionSummary != null) {
+      _prefs!.setString('lastSessionSummary', _lastSessionSummary!);
+    } else {
+      _prefs!.remove('lastSessionSummary');
+    }
+  }
+
   // --- LÓGICA DEL CRONÓMETRO ---
   void _startWork() {
     setState(() {
@@ -29,7 +95,10 @@ class _HomePageState extends State<HomePage> {
       _isPaused = false;
       _lastSessionSummary =
           null; // Limpiamos el resumen anterior al empezar uno nuevo
+      _workDuration = const Duration();
+      _breakDuration = const Duration();
     });
+    _saveState();
     _runTimer();
   }
 
@@ -43,6 +112,7 @@ class _HomePageState extends State<HomePage> {
           _breakDuration = Duration(seconds: _breakDuration.inSeconds + 1);
         }
       });
+      _saveState();
     });
   }
 
@@ -54,6 +124,7 @@ class _HomePageState extends State<HomePage> {
         _isPaused = false;
         _selectedPauseReason = null;
       });
+      _saveState();
     }
   }
 
@@ -114,6 +185,7 @@ class _HomePageState extends State<HomePage> {
       _breakDuration = const Duration();
       _selectedPauseReason = null;
     });
+    _saveState();
   }
 
   // --- DIÁLOGOS Y FORMATO ---
@@ -149,6 +221,7 @@ class _HomePageState extends State<HomePage> {
                       ? null
                       : () {
                           setState(() => _isPaused = true);
+                          _saveState();
                           Navigator.pop(context);
                         },
                   child: const Text('Confirmar'),
