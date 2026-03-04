@@ -15,6 +15,9 @@ import 'features/tareas/tareas.dart';
 import 'features/albaranes/albaranes.dart';
 import 'features/vacaciones/vacaciones.dart';
 
+// --- Importaciones de tema ---
+import 'shared/themes/color_scheme.dart';
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -24,9 +27,9 @@ class MyApp extends StatelessWidget {
       title: 'RMS DAM',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        primaryColor: const Color(0xFF007AFF),
-        scaffoldBackgroundColor: Colors.black,
-        // ... otros estilos que quieras unificar
+        colorScheme: AppColorScheme.dark,
+        primaryColor: AppColorScheme.dark.primary,
+        scaffoldBackgroundColor: AppColorScheme.dark.surface,
       ),
       // La ruta inicial depende de si el usuario ya está autenticado.
       initialRoute: AuthService().isAuthenticated ? '/home' : '/login',

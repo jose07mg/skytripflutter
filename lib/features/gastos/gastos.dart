@@ -46,13 +46,18 @@ class GastosPage extends StatelessWidget {
         backgroundColor: Colors.black,
         elevation: 0,
         // El icono del menú aparecerá automáticamente al asignar el drawer
-        iconTheme: const IconThemeData(color: Color(0xFF2196F3), size: 30),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.primary,
+          size: 30,
+        ),
         title: const Text('Gastos', style: TextStyle(color: Colors.white)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2.0),
           child: Container(
             // Uso de transparencia directa para evitar avisos de depreciación
-            color: const Color(0x802196F3), // Azul con 0.5 (80 en hex)
+            color: Theme.of(context).colorScheme.primary.withValues(
+              alpha: 0.5,
+            ), // Color del tema con transparencia
             height: 2.0,
           ),
         ),

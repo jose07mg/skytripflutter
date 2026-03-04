@@ -35,10 +35,10 @@ class _VacacionesPageState extends State<VacacionesPage> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Colors.blue,
+            colorScheme: ColorScheme.dark(
+              primary: Theme.of(context).colorScheme.primary,
               onPrimary: Colors.white,
-              surface: Color(0xFF1A1A1A),
+              surface: const Color(0xFF1A1A1A),
             ),
           ),
           child: child!,
@@ -94,13 +94,16 @@ class _VacacionesPageState extends State<VacacionesPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         // El icono de menú aparecerá automáticamente al asignar el drawer
-        iconTheme: const IconThemeData(color: Colors.blue, size: 30),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.primary,
+          size: 30,
+        ),
         title: const Text('Vacaciones', style: TextStyle(color: Colors.white)),
-        // Añadimos la linea azul inferior
+        // Añadimos la linea inferior
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
-            color: Colors.blue[800], // Línea divisoria azul oscura
+            color: Theme.of(context).colorScheme.primary, // Línea divisoria
             height: 1.0,
           ),
         ),
@@ -186,10 +189,16 @@ class _VacacionesPageState extends State<VacacionesPage> {
                     height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _seleccionarFechas,
-                      icon: const Icon(Icons.calendar_month),
-                      label: const Text('Seleccionar Fechas'),
+                      icon: const Icon(
+                        Icons.calendar_month,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Seleccionar Fechas',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),

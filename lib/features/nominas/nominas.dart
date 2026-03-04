@@ -60,14 +60,14 @@ class _NominasPageState extends State<NominasPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         // El icono del menú (hamburguesa) aparecerá automáticamente gracias al drawer
-        iconTheme: const IconThemeData(color: Color(0xFF007AFF)),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
         title: const Text('Nóminas', style: TextStyle(color: Colors.white)),
         elevation: 0,
-        // Añadimos la linea azul inferior
+        // Añadimos la linea inferior
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
-            color: Colors.blue[800], // Línea divisoria azul oscura
+            color: Theme.of(context).colorScheme.primary, // Línea divisoria
             height: 1.0,
           ),
         ),
@@ -134,14 +134,15 @@ class _NominasPageState extends State<NominasPage> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(
-                                  0x33007AFF,
-                                ), // Fondo azul claro
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(
+                                      alpha: 0.2,
+                                    ), // Fondo principal claro
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.picture_as_pdf,
-                                color: Color(0xFF007AFF),
+                                color: Theme.of(context).colorScheme.primary,
                                 size: 24,
                               ),
                             ),
@@ -174,7 +175,9 @@ class _NominasPageState extends State<NominasPage> {
                             // Acción para descargar o ver el PDF de ese mes
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF007AFF),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -215,14 +218,20 @@ class _NominasPageState extends State<NominasPage> {
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF004A99), width: 1.5),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           hint: Text(hint, style: const TextStyle(color: Color(0xFF8E8E93))),
           dropdownColor: const Color(0xFF1C1C1E),
-          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF007AFF)),
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           isExpanded: true,
           style: const TextStyle(color: Colors.white, fontSize: 16),
           items: items

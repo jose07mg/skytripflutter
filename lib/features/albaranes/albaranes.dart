@@ -138,16 +138,16 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
       appBar: AppBar(
         backgroundColor: Colors.black, // Cambiado fondo a negro
         // El icono del menú (hamburguesa) aparecerá automáticamente gracias al drawer
-        iconTheme: const IconThemeData(
-          color: Colors.blue,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.primary,
           size: 30,
-        ), // Icono azul
+        ), // Icono principal
         title: const Text('Albaranes', style: TextStyle(color: Colors.white)),
-        // Añadimos la linea azul inferior
+        // Añadimos la linea inferior
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
-            color: Colors.blue[800], // Línea divisoria azul oscura
+            color: Theme.of(context).colorScheme.primary, // Línea divisoria
             height: 1.0,
           ),
         ),
@@ -169,12 +169,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _botonSeleccionado == 0
-                            ? Colors.blue[800]
+                            ? Theme.of(context).colorScheme.primary
                             : const Color(0xFF161E2E),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _botonSeleccionado == 0
-                              ? Colors.blue
+                              ? Theme.of(context).colorScheme.primary
                               : const Color(0x669E9E9E),
                         ),
                       ),
@@ -199,12 +199,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _botonSeleccionado == 1
-                            ? Colors.blue[800]
+                            ? Theme.of(context).colorScheme.primary
                             : const Color(0xFF161E2E),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _botonSeleccionado == 1
-                              ? Colors.blue
+                              ? Theme.of(context).colorScheme.primary
                               : const Color(0x669E9E9E),
                         ),
                       ),
@@ -397,12 +397,16 @@ class AlbaranCard extends StatelessWidget {
           color: const Color(0xFF161E2E), // Fondo de la tarjeta oscuro
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0x80448AFF), // blueAccent con 0.5
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.5), // Borde principal
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0x26448AFF), // blueAccent con 0.15
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.15), // Sombra principal
               blurRadius: 10,
               spreadRadius: 1,
             ),
@@ -671,11 +675,15 @@ class AlbaranCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: telefono != 'S/N'
-                          ? Colors.blue.withValues(alpha: 0.2)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.2)
                           : Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: telefono != 'S/N' ? Colors.blue : Colors.grey,
+                        color: telefono != 'S/N'
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
                       ),
                     ),
                     child: Column(
@@ -683,7 +691,9 @@ class AlbaranCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.phone,
-                          color: telefono != 'S/N' ? Colors.blue : Colors.grey,
+                          color: telefono != 'S/N'
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
                           size: 20,
                         ),
                         const SizedBox(height: 4),
@@ -691,7 +701,7 @@ class AlbaranCard extends StatelessWidget {
                           'LLAMAR',
                           style: TextStyle(
                             color: telefono != 'S/N'
-                                ? Colors.blue
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.grey,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,

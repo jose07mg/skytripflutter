@@ -48,7 +48,11 @@ class _CalendarioPageState extends State<CalendarioPage> {
         elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.blue, size: 28),
+            icon: Icon(
+              Icons.menu,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -146,9 +150,11 @@ class _CalendarioPageState extends State<CalendarioPage> {
         width: ancho,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: const Color(0x1A2196F3),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0x332196F3)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -161,7 +167,11 @@ class _CalendarioPageState extends State<CalendarioPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.blue, size: 18),
+            Icon(
+              Icons.keyboard_arrow_down,
+              color: Theme.of(context).colorScheme.primary,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -329,7 +339,7 @@ class _CalendarioPageState extends State<CalendarioPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _punto(Colors.blue),
+                        _punto(Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 2),
                         _punto(Colors.orange),
                       ],
@@ -392,7 +402,9 @@ class _CalendarioPageState extends State<CalendarioPage> {
           trailing: Text(
             _dbHoras.containsKey(k) ? "${_dbHoras[k]![0]}h" : "Detalle",
             style: TextStyle(
-              color: _dbHoras.containsKey(k) ? Colors.blue : Colors.white24,
+              color: _dbHoras.containsKey(k)
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.white24,
             ),
           ),
           onTap: () => _mostrarDetallePopup(diaActual, _dbHoras[k], k),
@@ -434,7 +446,9 @@ class _CalendarioPageState extends State<CalendarioPage> {
           ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: const Color(0x1A2196F3),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               child: Text(
                 "$diaActual",
                 style: const TextStyle(
@@ -450,7 +464,9 @@ class _CalendarioPageState extends State<CalendarioPage> {
             subtitle: Text(
               tieneData ? "Trabajo: ${_dbHoras[k]![0]}h" : "Sin registrar",
               style: TextStyle(
-                color: tieneData ? Colors.blue : Colors.white24,
+                color: tieneData
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.white24,
                 fontSize: 11,
               ),
             ),
@@ -482,7 +498,7 @@ class _CalendarioPageState extends State<CalendarioPage> {
             _filaPopup(
               "Trabajo",
               datos != null ? "${datos[0]}h" : "0h",
-              Colors.blue,
+              Theme.of(context).colorScheme.primary,
             ),
             _filaPopup(
               "Descanso",
@@ -494,9 +510,9 @@ class _CalendarioPageState extends State<CalendarioPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               "REGISTRAR",
-              style: TextStyle(color: Colors.blue),
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
           ),
           TextButton(

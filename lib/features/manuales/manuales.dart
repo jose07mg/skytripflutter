@@ -238,7 +238,10 @@ class _ManualesScreenState extends State<ManualesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF2196F3), size: 30),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.primary,
+          size: 30,
+        ),
         title: Text(
           _isViewingModelos ? (_selectedMarcaNombre ?? 'Modelos') : 'Marcas',
           style: const TextStyle(color: Colors.white),
@@ -251,7 +254,10 @@ class _ManualesScreenState extends State<ManualesScreen> {
             : null, // Si no, usa el icono default (hamburguesa) que pone Scaffold para el Drawer
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2.0),
-          child: Container(color: const Color(0x802196F3), height: 2.0),
+          child: Container(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+            height: 2.0,
+          ),
         ),
       ),
       body: Stack(
@@ -296,9 +302,11 @@ class _ManualesScreenState extends State<ManualesScreen> {
           if (_isFetchingManual)
             Container(
               color: Colors.black54,
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2196F3)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ),
             ),
@@ -357,7 +365,11 @@ class _ManualesScreenState extends State<ManualesScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF101C2B),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0x4D2196F3)),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.3),
+              ),
             ),
             padding: const EdgeInsets.all(4.0),
             child: Column(
@@ -470,7 +482,11 @@ class _ManualesScreenState extends State<ManualesScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF101C2B),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0x4D2196F3)),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.3),
+              ),
             ),
             padding: const EdgeInsets.all(4.0),
             child: Column(
