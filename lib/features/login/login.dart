@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 import '../auth/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,7 +14,49 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final LocalAuthentication _localAuth = LocalAuthentication();
+
   bool _isLoading = false;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSavedCredentialsAndAuthenticate();
+  }
+
+  Future<void> _checkSavedCredentialsAndAuthenticate() async {
+    try {
+      String? savedUsername = await _secureStorage.read(key: 'username');
+      String? savedPassword = await _secureStorage.read(key: 'password');
+
+      if (savedUsername != null && savedPassword != null) {
+        setState(() {
+          _userController.text = savedUsername;
+          _passwordController.text = savedPassword;
+          _rememberMe = true;
+        });
+
+        bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
+        bool isDeviceSupported = await _localAuth.isDeviceSupported();
+
+        if (canCheckBiometrics && isDeviceSupported) {
+          bool authenticated = await _localAuth.authenticate(
+            localizedReason: 'Por favor, autentícate para iniciar sesión',
+            biometricOnly: true,
+            persistAcrossBackgrounding: true,
+          );
+
+          if (authenticated) {
+            _login();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al verificar credenciales guardadas: $e');
+    }
+  }
 
   Future<void> _login() async {
     // Evita múltiples peticiones si ya hay una en curso
@@ -30,6 +74,15 @@ class _LoginPageState extends State<LoginPage> {
         username: username,
         password: password,
       );
+
+      // Guardar o eliminar credenciales según el estado del checkbox
+      if (_rememberMe) {
+        await _secureStorage.write(key: 'username', value: username);
+        await _secureStorage.write(key: 'password', value: password);
+      } else {
+        await _secureStorage.delete(key: 'username');
+        await _secureStorage.delete(key: 'password');
+      }
 
       if (!mounted) return;
 
@@ -116,7 +169,28 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Checkbox(
+                  value: _rememberMe,
+                  onChanged: (value) {
+                    setState(() {
+                      _rememberMe = value ?? false;
+                    });
+                  },
+                  activeColor: Theme.of(context).colorScheme.primary,
+                  side: const BorderSide(color: Colors.grey),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Guardar contraseña y usar Face ID/Huella',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               height: 50,
