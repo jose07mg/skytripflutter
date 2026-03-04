@@ -258,13 +258,7 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       final String numAlbaran =
                           albaran['numalbaran']?.toString() ?? 'S/N';
 
-                      String numRegistro =
-                          albaran['fechaalbaran']?.toString() ?? 'S/N';
-                      if (numRegistro.length > 10 && numRegistro != 'S/N') {
-                        numRegistro = numRegistro.substring(0, 10);
-                      }
-
-                      // numPresupuesto se elimina, su campo se reutilizará para numPunto
+                      // numRegistro y numPresupuesto se eliminan de la vista
 
                       String fechaAlbaran =
                           albaran['fechaalbaran']?.toString() ?? 'S/N';
@@ -296,9 +290,6 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                           ? 'S/N'
                           : direccionRaw;
 
-                      final String numPunto =
-                          albaran['numpto']?.toString() ?? 'S/N';
-
                       final String estadoRaw =
                           albaran['estado']?.toString() ?? 'S/N';
                       final String estado =
@@ -325,13 +316,10 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
 
                       return AlbaranCard(
                         numAlbaran: numAlbaran,
-                        numRegistro: numRegistro,
                         fechaEntrega: fechaEntrega,
                         fechaSalida: fechaSalida,
                         clienteInfo: nombre,
                         direccion: direccion,
-                        punto:
-                            numPunto, // Ya no se renderizará suelto, pero dejamos el parámetro por si acaso
                         estado: estado,
                         pdf: pdfStatus,
                         telefono: telefono,
@@ -348,12 +336,10 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
 // --- WIDGET TARJETA DE ALBARÁN ---
 class AlbaranCard extends StatelessWidget {
   final String numAlbaran;
-  final String numRegistro;
   final String fechaEntrega;
   final String fechaSalida;
   final String clienteInfo;
   final String direccion;
-  final String punto;
   final String estado;
   final String pdf;
   final String telefono;
@@ -361,12 +347,10 @@ class AlbaranCard extends StatelessWidget {
   const AlbaranCard({
     super.key,
     required this.numAlbaran,
-    required this.numRegistro,
     required this.fechaEntrega,
     required this.fechaSalida,
     required this.clienteInfo,
     required this.direccion,
-    required this.punto,
     required this.estado,
     required this.pdf,
     required this.telefono,
@@ -448,7 +432,7 @@ class AlbaranCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
@@ -469,49 +453,7 @@ class AlbaranCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.app_registration,
-                        color: Colors.grey[400],
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Registro: $numRegistro',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.request_quote,
-                        color: Colors.grey[400],
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Presupuesto: $punto',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
@@ -532,7 +474,7 @@ class AlbaranCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(Icons.outbox, color: Colors.grey[400], size: 16),
@@ -549,6 +491,7 @@ class AlbaranCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
 
                   const SizedBox(height: 10),
                   Row(
