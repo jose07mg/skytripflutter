@@ -252,13 +252,16 @@ class _HomePageState extends State<HomePage> {
       drawer: const MenuLateral(),
       appBar: AppBar(
         backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.blue, size: 30),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.primary,
+          size: 30,
+        ),
         title: const Text('Fichaje', style: TextStyle(color: Colors.white)),
-        // Añadimos la linea azul inferior
+        // Añadimos la linea inferior
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
-            color: Colors.blue[800], // Línea divisoria azul oscura
+            color: Theme.of(context).colorScheme.primary, // Línea divisoria
             height: 1.0,
           ),
         ),
@@ -270,9 +273,12 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 30),
 
             // --- CRONÓMETRO DE TRABAJO ---
-            const Text(
+            Text(
               "TIEMPO DE TRABAJO",
-              style: TextStyle(color: Colors.blue, fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 14,
+              ),
             ),
             Text(
               _formatDuration(_workDuration),
@@ -313,7 +319,11 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   color: Colors.blueGrey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Text(
                   _lastSessionSummary!,
@@ -331,7 +341,11 @@ class _HomePageState extends State<HomePage> {
 
             // --- BOTONES ---
             if (!_isStarted) ...[
-              _actionButton('Iniciar', Colors.blue, _startWork),
+              _actionButton(
+                'Iniciar',
+                Theme.of(context).colorScheme.primary,
+                _startWork,
+              ),
             ] else ...[
               _actionButton(
                 _isPaused ? 'Reanudar' : 'Descanso',

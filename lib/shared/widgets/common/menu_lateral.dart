@@ -160,13 +160,17 @@ class MenuLateral extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           icon,
-          color: isActive ? Colors.blue : Colors.black54,
+          color: isActive
+              ? Theme.of(context).colorScheme.primary
+              : Colors.black54,
           size: 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isActive ? Colors.blue.shade800 : Colors.black87,
+            color: isActive
+                ? Theme.of(context).colorScheme.primary
+                : Colors.black87,
             fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
             fontSize: 15,
           ),
