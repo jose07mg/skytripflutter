@@ -18,7 +18,6 @@ class _LoginPageState extends State<LoginPage> {
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   bool _isLoading = false;
-  bool _rememberMe = false;
 
   @override
   void initState() {
@@ -35,21 +34,26 @@ class _LoginPageState extends State<LoginPage> {
         setState(() {
           _userController.text = savedUsername;
           _passwordController.text = savedPassword;
-          _rememberMe = true;
         });
+        bool canCheckBiometrics = false;
+        bool isDeviceSupported = false;
 
-        bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
-        bool isDeviceSupported = await _localAuth.isDeviceSupported();
+        try {
+          canCheckBiometrics = await _localAuth.canCheckBiometrics;
+          isDeviceSupported = await _localAuth.isDeviceSupported();
+        } on Exception catch (e) {
+          debugPrint('Biometría no soportada en esta plataforma: $e');
+        }
 
         if (canCheckBiometrics && isDeviceSupported) {
           bool authenticated = await _localAuth.authenticate(
-            localizedReason: 'Por favor, autentícate para iniciar sesión',
+            localizedReason: 'Inicia sesión con Face ID / Huella',
             biometricOnly: true,
             persistAcrossBackgrounding: true,
           );
 
           if (authenticated) {
-            _login();
+            _login(isBiometric: true);
           }
         }
       }
@@ -58,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _login() async {
+  Future<void> _login({bool isBiometric = false}) async {
     // Evita múltiples peticiones si ya hay una en curso
     if (_isLoading) return;
 
@@ -75,20 +79,56 @@ class _LoginPageState extends State<LoginPage> {
         password: password,
       );
 
-      // Guardar o eliminar credenciales según el estado del checkbox
-      if (_rememberMe) {
-        await _secureStorage.write(key: 'username', value: username);
-        await _secureStorage.write(key: 'password', value: password);
-      } else {
-        await _secureStorage.delete(key: 'username');
-        await _secureStorage.delete(key: 'password');
-      }
-
       if (!mounted) return;
+
+      // Si fue login manual, preguntamos si quiere guardar credenciales
+      if (!isBiometric) {
+        bool canCheckBiometrics = false;
+        bool isDeviceSupported = false;
+
+        try {
+          canCheckBiometrics = await _localAuth.canCheckBiometrics;
+          isDeviceSupported = await _localAuth.isDeviceSupported();
+        } catch (e) {
+          debugPrint('Biometría no soportada en esta plataforma: $e');
+        }
+
+        if (canCheckBiometrics && isDeviceSupported) {
+          if (!mounted) return;
+          bool? saveCredentials = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('¿Usar Face ID / Huella?'),
+              content: const Text(
+                '¿Quieres guardar tu contraseña para iniciar sesión con Face ID / Huella?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('No, gracias'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Sí, usar Face ID/Huella'),
+                ),
+              ],
+            ),
+          );
+
+          if (saveCredentials == true) {
+            await _secureStorage.write(key: 'username', value: username);
+            await _secureStorage.write(key: 'password', value: password);
+          } else {
+            await _secureStorage.delete(key: 'username');
+            await _secureStorage.delete(key: 'password');
+          }
+        }
+      }
 
       // Si el login es exitoso, navegamos a Home
       // Usamos la ruta nombrada para que sea consistente con el resto de la app
       // y respete cualquier lógica de enrutamiento global.
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } on AuthException catch (e) {
       // Si hay un error de autenticación, lo mostramos y limpiamos el campo
@@ -169,28 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Checkbox(
-                  value: _rememberMe,
-                  onChanged: (value) {
-                    setState(() {
-                      _rememberMe = value ?? false;
-                    });
-                  },
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  side: const BorderSide(color: Colors.grey),
-                ),
-                const Expanded(
-                  child: Text(
-                    'Guardar contraseña y usar Face ID/Huella',
-                    style: TextStyle(color: Colors.grey, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               height: 50,
