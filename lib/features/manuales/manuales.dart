@@ -16,10 +16,11 @@ class ManualesScreen extends StatefulWidget {
 
 class _ManualesScreenState extends State<ManualesScreen> {
   int? _selectedMarca; // Cambiamos a int para guardar el ID
-  int? _selectedModelo; // Cambiamos a int para guardar el ID
-  bool _isFetchingManual = false; // Estado para el botón de mostrar manual
+  String? _selectedMarcaNombre; // Para mostrar en el breadcrumb
+  bool _isFetchingManual = false; // Estado para el botón de mostrar overlay
   bool _isLoadingMarcas = true;
   bool _isLoadingModelos = false;
+  bool _isViewingModelos = false; // Nueva variable para controlar la vista
 
   List<dynamic> _marcas = []; // Lista de objetos completos
   List<dynamic> _modelos = []; // Lista de objetos completos
@@ -31,20 +32,16 @@ class _ManualesScreenState extends State<ManualesScreen> {
   }
 
   Future<void> _fetchMarcas() async {
-    // Nota: Para emuladores de Android, 'localhost' debe ser '10.0.2.2'.
-    // Para web o emulador de iOS, 'localhost' suele funcionar correctamente.
-    // Usamos baseUrl para apuntar al entorno de desarrollo local (localhost, 10.0.2.2, etc.)
     final url = '${ApiConstants.baseUrl}/manuales/marcas';
 
     try {
-      // Obtenemos el token actual
       final token = AuthService().token;
 
       final response = await http.get(
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // Enviamos el token al servidor
+          'Authorization': 'Bearer $token',
         },
       );
 
@@ -53,14 +50,12 @@ class _ManualesScreenState extends State<ManualesScreen> {
       if (response.statusCode == 200) {
         final dynamic responseBody = json.decode(response.body);
 
-        // Adaptamos a tu respuesta: {"success": true, "data": [...]}
         final List<dynamic> data =
             (responseBody is Map && responseBody.containsKey('data'))
             ? responseBody['data']
             : [];
 
         setState(() {
-          // Guardamos el objeto completo para tener acceso al ID
           _marcas = data;
           _isLoadingMarcas = false;
         });
@@ -79,22 +74,21 @@ class _ManualesScreenState extends State<ManualesScreen> {
       setState(() {
         _isLoadingMarcas = false;
       });
-      // Log detallado para depuración.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error de conexión al cargar marcas: $e')),
       );
     }
   }
 
-  Future<void> _fetchModelos(int marcaId) async {
+  Future<void> _fetchModelos(int marcaId, String marcaNombre) async {
     setState(() {
+      _selectedMarca = marcaId;
+      _selectedMarcaNombre = marcaNombre;
+      _isViewingModelos = true;
       _isLoadingModelos = true;
       _modelos = [];
-      _selectedModelo = null;
     });
 
-    // Usamos la URL que indicaste: .../manuales/equipos?marca_id=ID
-    // Usamos baseUrl para apuntar al entorno de desarrollo local
     final url = '${ApiConstants.baseUrl}/manuales/equipos?marca_id=$marcaId';
 
     try {
@@ -135,18 +129,25 @@ class _ManualesScreenState extends State<ManualesScreen> {
     }
   }
 
+  // Volver a la vista de marcas
+  void _volverAMarcas() {
+    setState(() {
+      _isViewingModelos = false;
+      _selectedMarca = null;
+      _selectedMarcaNombre = null;
+      _modelos = [];
+    });
+  }
+
   // --- OBTENER Y LANZAR MANUAL ---
-  // Al pulsar el botón, busca la URL del manual y la abre.
-  Future<void> _fetchAndLaunchManual() async {
-    if (_selectedModelo == null || _isFetchingManual) return;
+  Future<void> _fetchAndLaunchManual(int modeloId) async {
+    if (_isFetchingManual) return;
 
     setState(() {
       _isFetchingManual = true;
     });
 
-    // Endpoint correcto según tu API: /manuales/equipo/manual?id=X
-    final url =
-        '${ApiConstants.baseUrl}/manuales/equipo/manual?id=$_selectedModelo';
+    final url = '${ApiConstants.baseUrl}/manuales/equipo/manual?id=$modeloId';
 
     try {
       final token = AuthService().token;
@@ -162,12 +163,34 @@ class _ManualesScreenState extends State<ManualesScreen> {
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
-        // La API devuelve: {"success": true, "data": {"documento": "path/to.pdf"}}
-        final String? relativePath = responseBody['data']?['documento'];
+        final data = responseBody['data'];
+        String? relativePath;
 
-        if (relativePath != null && relativePath.isNotEmpty) {
-          // Construimos la URL completa. Asumimos que el path es relativo a la carpeta public.
-          final fullFileUrl = '${ApiConstants.baseUrl}/$relativePath';
+        if (data is String) {
+          relativePath = data;
+        } else if (data is Map) {
+          relativePath =
+              data['documento'] ??
+              data['manual'] ??
+              data['archivo'] ??
+              data['ruta'] ??
+              data['pdf'];
+        } else {
+          relativePath = responseBody['documento'] ?? responseBody['manual'];
+        }
+
+        if (relativePath != null && relativePath.toString().trim().isNotEmpty) {
+          String fullFileUrl = relativePath.toString();
+          if (!fullFileUrl.startsWith('http')) {
+            if (fullFileUrl.startsWith('/')) {
+              fullFileUrl = fullFileUrl.substring(1);
+            }
+            if (fullFileUrl.startsWith('upload')) {
+              fullFileUrl = '${ApiConstants.webUrl}/$fullFileUrl';
+            } else {
+              fullFileUrl = '${ApiConstants.baseUrl}/$fullFileUrl';
+            }
+          }
           await _launchManual(fullFileUrl);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -194,7 +217,6 @@ class _ManualesScreenState extends State<ManualesScreen> {
   }
 
   // --- LANZADOR DE URL ---
-  // Abre el manual (PDF, imagen, etc.) en una aplicación externa (navegador, visor de PDF).
   Future<void> _launchManual(String fileUrl) async {
     final Uri url = Uri.parse(fileUrl);
     if (!await canLaunchUrl(url)) {
@@ -212,151 +234,288 @@ class _ManualesScreenState extends State<ManualesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      // LLAMADA AL MENÚ CENTRALIZADO: Limpia las más de 60 líneas de código repetido
       drawer: const MenuLateral(),
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        // El icono del menú (hamburguesa) aparecerá automáticamente
         iconTheme: const IconThemeData(color: Color(0xFF2196F3), size: 30),
-        title: const Text('Manuales', style: TextStyle(color: Colors.white)),
+        title: Text(
+          _isViewingModelos ? (_selectedMarcaNombre ?? 'Modelos') : 'Marcas',
+          style: const TextStyle(color: Colors.white),
+        ),
+        leading: _isViewingModelos
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _volverAMarcas,
+              )
+            : null, // Si no, usa el icono default (hamburguesa) que pone Scaffold para el Drawer
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2.0),
-          child: Container(
-            // Mantenemos la corrección de rendimiento sugerida por Flutter
-            color: const Color(0x802196F3), // Azul con 50% opacidad (0.5)
-            height: 2.0,
-          ),
+          child: Container(color: const Color(0x802196F3), height: 2.0),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
-        child: SingleChildScrollView(
-          // Para evitar overflow si el manual es grande
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _isLoadingMarcas
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  : _buildObjectDropdown(
-                      hint: "Selecciona una marca",
-                      value: _selectedMarca,
-                      items: _marcas,
-                      labelKey: 'marca',
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedMarca = val; // Guardamos la nueva marca
-                          _selectedModelo =
-                              null; // Reseteamos el modelo al cambiar de marca
-                        });
-                        if (val != null) {
-                          _fetchModelos(
-                            val,
-                          ); // Cargamos modelos al elegir marca
-                        }
-                      },
-                    ),
-              const SizedBox(height: 16),
-              _isLoadingModelos
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildObjectDropdown(
-                      hint: "Selecciona un modelo",
-                      value: _selectedModelo,
-                      items: _modelos,
-                      labelKey:
-                          'modelo', // Asumimos que el campo se llama 'modelo' (o 'nombre')
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedModelo = val;
-                        });
-                      },
-                      isDisabled: _modelos.isEmpty,
-                    ),
-              const SizedBox(height: 24),
-
-              ElevatedButton(
-                // El botón se activa solo si hay un modelo seleccionado
-                onPressed: _selectedModelo == null || _isFetchingManual
-                    ? null
-                    : _fetchAndLaunchManual,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007BFF),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  // Estilo para cuando el botón está desactivado
-                  disabledBackgroundColor: Colors.grey[800],
-                ),
-                child: _isFetchingManual
-                    ? const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 25.0,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!_isViewingModelos) ...[
+                    // VISTA DE MARCAS
+                    if (_isLoadingMarcas)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                          child: CircularProgressIndicator(),
+                        ),
                       )
-                    : const Text(
-                        'Mostrar manual',
-                        style: TextStyle(fontSize: 18),
-                      ),
+                    else
+                      _buildMarcasGrid(),
+                  ] else ...[
+                    // VISTA DE MODELOS
+                    if (_isLoadingModelos)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else
+                      _buildModelosGrid(),
+                  ],
+                  const SizedBox(height: 24),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
-        ),
+          if (_isFetchingManual)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2196F3)),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  // Widget auxiliar para construir los selectores manejando objetos (ID/Nombre)
-  Widget _buildObjectDropdown({
-    required String hint,
-    required int? value,
-    required List<dynamic> items,
-    required String labelKey,
-    required ValueChanged<int?> onChanged,
-    bool isDisabled = false,
-  }) {
-    // Validación para evitar errores de aserción si el valor no está en la lista
-    final bool valueExists = items.any((item) => item['id'] == value);
-    final int? validatedValue = valueExists ? value : null;
+  // Widget para mostrar la cuadrícula de marcas
+  Widget _buildMarcasGrid() {
+    if (_marcas.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay marcas disponibles',
+          style: TextStyle(color: Colors.white70, fontSize: 16),
+        ),
+      );
+    }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF101C2B),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isDisabled
-              ? Colors.white10
-              : const Color(0x4D2196F3), // Azul con ~30% opacidad
-        ),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 0.85,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: validatedValue,
-          hint: Text(
-            isDisabled ? "Sin modelos disponibles" : hint,
-            style: const TextStyle(color: Colors.grey),
+      itemCount: _marcas.length,
+      itemBuilder: (context, index) {
+        final item = _marcas[index];
+        final id = item['id'];
+        final nombre =
+            item['marca']?.toString() ??
+            item['nombre']?.toString() ??
+            'Marca $id';
+
+        String imgPath =
+            item['logo']?.toString() ?? item['imagen']?.toString() ?? '';
+        String fullImgUrl = '';
+        if (imgPath.isNotEmpty) {
+          if (imgPath.startsWith('http')) {
+            fullImgUrl = imgPath;
+          } else {
+            final relativePath = imgPath.startsWith('/')
+                ? imgPath.substring(1)
+                : imgPath;
+            fullImgUrl = '${ApiConstants.webUrl}/$relativePath';
+          }
+        }
+
+        return InkWell(
+          onTap: () => _fetchModelos(id, nombre),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF101C2B),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x4D2196F3)),
+            ),
+            padding: const EdgeInsets.all(4.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(4.0),
+                    decoration: BoxDecoration(
+                      color: Colors
+                          .white, // Fondo blanco para logos que suelen tener fondo blanco/transparente
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: fullImgUrl.isNotEmpty
+                        ? Image.network(
+                            ApiConstants.getProxiedImageUrl(fullImgUrl),
+                            fit: BoxFit.contain, // Contain es mejor para logos
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey,
+                                  size: 30,
+                                ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.business,
+                              color: Colors.grey,
+                              size: 30,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  nombre,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          dropdownColor: const Color(0xFF101C2B),
-          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF2196F3)),
-          isExpanded: true,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          onChanged: isDisabled ? null : onChanged,
-          items: items.map<DropdownMenuItem<int>>((item) {
-            // Intentamos obtener el nombre usando labelKey, o 'nombre' como respaldo
-            String label =
-                item[labelKey]?.toString() ??
-                item['nombre']?.toString() ??
-                'Item ${item['id']}';
-            return DropdownMenuItem<int>(value: item['id'], child: Text(label));
-          }).toList(),
+        );
+      },
+    );
+  }
+
+  // Widget para mostrar la cuadrícula de modelos
+  Widget _buildModelosGrid() {
+    if (_modelos.isEmpty) {
+      if (_selectedMarca == null) return const SizedBox.shrink();
+      return const Center(
+        child: Text(
+          'No hay modelos para esta marca',
+          style: TextStyle(color: Colors.white70, fontSize: 16),
         ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 0.8, // Ajustar según el tamaño de la imagen y texto
       ),
+      itemCount: _modelos.length,
+      itemBuilder: (context, index) {
+        final modelo = _modelos[index];
+        final id = modelo['id'];
+        final nombre =
+            modelo['modelo']?.toString() ??
+            modelo['nombre']?.toString() ??
+            'Modelo $id';
+
+        // Determinar URL de imagen (si existe)
+        String imgPath =
+            modelo['imagen']?.toString() ??
+            modelo['foto']?.toString() ??
+            modelo['image']?.toString() ??
+            '';
+        String fullImgUrl = '';
+        if (imgPath.isNotEmpty) {
+          if (imgPath.startsWith('http')) {
+            // La API ya devuelve una URL absoluta
+            fullImgUrl = imgPath;
+          } else {
+            // La BD guarda rutas relativas como "imgequipos/FOTO.jpg"
+            // Las construimos usando webUrl como base
+            final relativePath = imgPath.startsWith('/')
+                ? imgPath.substring(1)
+                : imgPath;
+            fullImgUrl = '${ApiConstants.webUrl}/$relativePath';
+          }
+          debugPrint('🖼️ Imagen URL: $fullImgUrl');
+        }
+
+        return InkWell(
+          onTap: () => _fetchAndLaunchManual(id),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF101C2B),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x4D2196F3)),
+            ),
+            padding: const EdgeInsets.all(4.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: fullImgUrl.isNotEmpty
+                        ? Image.network(
+                            ApiConstants.getProxiedImageUrl(fullImgUrl),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey,
+                                  size: 30,
+                                ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.devices,
+                              color: Colors.grey,
+                              size: 30,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  nombre,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
