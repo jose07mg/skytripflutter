@@ -131,6 +131,22 @@ class _NominasPageState extends State<NominasPage> {
                       children: [
                         Row(
                           children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(
+                                      alpha: 0.2,
+                                    ), // Fondo principal claro
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.picture_as_pdf,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 15),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -154,21 +170,29 @@ class _NominasPageState extends State<NominasPage> {
                             ),
                           ],
                         ),
-                        IconButton(
+                        ElevatedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Abriendo nómina de $monthName...',
-                                ),
-                                backgroundColor: Colors.blue,
-                              ),
-                            );
+                            // Acción para descargar o ver el PDF de ese mes
                           },
-                          icon: const Icon(
-                            Icons.picture_as_pdf,
-                            color: Colors.blue,
-                            size: 30,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.secondary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            minimumSize: Size.zero,
+                          ),
+                          child: const Text(
+                            'Ver',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],

@@ -104,7 +104,7 @@ class MenuLateral extends StatelessWidget {
             ),
 
             // Botón de Cerrar Sesión al final
-            const Divider(),
+            const Divider(color: Colors.white24),
             ListTile(
               leading: const Icon(Icons.exit_to_app, color: Colors.red),
               title: const Text(
@@ -150,46 +150,53 @@ class MenuLateral extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: isActive
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Stack(
         children: [
           if (isActive)
             Positioned(
               left: 0,
-              top: 12,
-              bottom: 12,
+              top: 10,
+              bottom: 10,
               child: Container(
                 width: 4,
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-          ListTile(
-            leading: Icon(
-              icon,
-              color: isActive ? Colors.white : Colors.white54,
-              size: 22,
-            ),
-            title: Text(
-              title,
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.white70,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                fontSize: 15,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isActive
+                  ? null
+                  : () {
+                      // Usamos navegación por nombre para pasar por el AuthGuard.
+                      // El menú se cierra automáticamente al reemplazar la ruta.
+                      Navigator.pushReplacementNamed(context, routeName);
+                    },
+              hoverColor: Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: ListTile(
+                  leading: Icon(
+                    icon,
+                    color: isActive ? Colors.white : Colors.white60,
+                    size: 22,
+                  ),
+                  title: Text(
+                    title,
+                    style: TextStyle(
+                      color: isActive ? Colors.white : Colors.white60,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
               ),
             ),
-            onTap: isActive
-                ? null
-                : () {
-                    Navigator.pushReplacementNamed(context, routeName);
-                  },
           ),
         ],
       ),
