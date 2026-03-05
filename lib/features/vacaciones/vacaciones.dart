@@ -198,7 +198,9 @@ class _VacacionesPageState extends State<VacacionesPage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.secondary,
                       ),
                     ),
                   ),

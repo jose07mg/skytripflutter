@@ -74,7 +74,7 @@ class _TareasScreenState extends State<TareasScreen> {
                 // Lógica para filtrar o buscar tareas
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 55),
                 shape: RoundedRectangleBorder(
