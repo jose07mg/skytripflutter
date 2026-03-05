@@ -6,6 +6,7 @@ import '../../core/constants/api_constants.dart';
 import '../auth/auth_service.dart';
 // Importación del menú centralizado según tu estructura de carpetas
 import '../../shared/widgets/common/menu_lateral.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ManualesScreen extends StatefulWidget {
   const ManualesScreen({super.key});
@@ -21,14 +22,113 @@ class _ManualesScreenState extends State<ManualesScreen> {
   bool _isLoadingMarcas = true;
   bool _isLoadingModelos = false;
   bool _isViewingModelos = false; // Nueva variable para controlar la vista
+  bool _isSearching =
+      false; // Nueva variable para controlar si estamos buscando
 
   List<dynamic> _marcas = []; // Lista de objetos completos
-  List<dynamic> _modelos = []; // Lista de objetos completos
+  List<dynamic> _modelos = []; // Lista de objetos completos para una marca
+
+  // Novedad: Variables para la Búsqueda Global
+  final TextEditingController _searchController = TextEditingController();
+  List<dynamic> _todosLosModelos =
+      []; // Para guardar absolutamente todos los equipos
+  List<dynamic> _modelosFiltrados = []; // Los que coinciden con la búsqueda
 
   @override
   void initState() {
     super.initState();
     _fetchMarcas();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Descarga todos los modelos (equipos) globalmente para buscar
+  Future<void> _fetchAllModelos() async {
+    // Si no tenemos marcas, no podemos descargar sus modelos
+    if (_marcas.isEmpty) return;
+
+    final token = AuthService().token;
+
+    // Vaciamos la lista global al iniciar
+    setState(() {
+      _todosLosModelos = [];
+    });
+
+    // Recorremos las marcas de una en una y concatenamos los resultados *progresivamente*
+    for (var marca in _marcas) {
+      final marcaId = marca['id'];
+      if (marcaId == null) continue;
+
+      final url = '${ApiConstants.baseUrl}/manuales/equipos?marca_id=$marcaId';
+
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final dynamic responseBody = json.decode(response.body);
+          final List<dynamic> data =
+              (responseBody is Map && responseBody.containsKey('data'))
+              ? responseBody['data']
+              : (responseBody is List ? responseBody : []);
+
+          if (!mounted) return;
+
+          // Agregamos los modelos a la lista global en TRAYECTOS, no al final de todo el bucle
+          setState(() {
+            _todosLosModelos.addAll(data);
+
+            // Si el usuario ya está buscando, vamos refrescando los modelos en vivo
+            if (_searchController.text.isNotEmpty) {
+              _filterModelos(_searchController.text);
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint(
+          'Error al cargar modelos furtivamente para la marca $marcaId: $e',
+        );
+      }
+    }
+
+    if (!mounted) return;
+    debugPrint(
+      'Búsqueda global terminada: compilados ${_todosLosModelos.length} modelos de todas las marcas.',
+    );
+  }
+
+  // Filtrado de búsqueda local (case insensitive)
+  void _filterModelos(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _modelosFiltrados = [];
+      });
+      return;
+    }
+
+    // Buscamos ignorando mayúsculas/minúsculas
+    final lowercaseQuery = query.toLowerCase();
+
+    setState(() {
+      _isSearching = true;
+      _modelosFiltrados = _todosLosModelos.where((modelo) {
+        final nombre =
+            modelo['modelo']?.toString().toLowerCase() ??
+            modelo['nombre']?.toString().toLowerCase() ??
+            '';
+        return nombre.contains(lowercaseQuery);
+      }).toList();
+    });
   }
 
   Future<void> _fetchMarcas() async {
@@ -59,6 +159,10 @@ class _ManualesScreenState extends State<ManualesScreen> {
           _marcas = data;
           _isLoadingMarcas = false;
         });
+
+        // Una vez que tenemos las marcas, desencadenamos la descarga de los modelos
+        // globalmente en segundo plano.
+        _fetchAllModelos();
       } else {
         setState(() {
           _isLoadingMarcas = false;
@@ -265,38 +369,96 @@ class _ManualesScreenState extends State<ManualesScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 20.0,
-              vertical: 25.0,
+              vertical: 20.0,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (!_isViewingModelos) ...[
-                    // VISTA DE MARCAS
-                    if (_isLoadingMarcas)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else
-                      _buildMarcasGrid(),
-                  ] else ...[
-                    // VISTA DE MODELOS
-                    if (_isLoadingModelos)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else
-                      _buildModelosGrid(),
-                  ],
-                  const SizedBox(height: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // BUSCADOR GLOBAL
+                if (!_isViewingModelos) ...[
+                  TextField(
+                    controller: _searchController,
+                    onChanged: _filterModelos,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar modelo exacto...',
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.white70,
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: Colors.white70,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterModelos('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: const Color(0xFF101C2B),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
-              ),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_isSearching) ...[
+                          // VISTA DE BÚSQUEDA GLOBAL
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: Text(
+                              'Resultados de búsqueda (${_modelosFiltrados.length})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          _buildModelosGrid(esBusquedaGlobal: true),
+                        ] else if (!_isViewingModelos) ...[
+                          // VISTA DE MARCAS
+                          if (_isLoadingMarcas)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20.0),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          else
+                            _buildMarcasGrid(),
+                        ] else ...[
+                          // VISTA DE MODELOS
+                          if (_isLoadingModelos)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20.0),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          else
+                            _buildModelosGrid(),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           if (_isFetchingManual)
@@ -383,16 +545,26 @@ class _ManualesScreenState extends State<ManualesScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: fullImgUrl.isNotEmpty
-                        ? Image.network(
-                            ApiConstants.getProxiedImageUrl(fullImgUrl),
+                        ? CachedNetworkImage(
+                            imageUrl: ApiConstants.getProxiedImageUrl(
+                              fullImgUrl,
+                            ),
                             fit: BoxFit.contain, // Contain es mejor para logos
                             width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                                  Icons.image_not_supported,
-                                  color: Colors.grey,
-                                  size: 30,
+                            placeholder: (context, url) => const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                              size: 30,
+                            ),
                           )
                         : const Center(
                             child: Icon(
@@ -424,13 +596,19 @@ class _ManualesScreenState extends State<ManualesScreen> {
   }
 
   // Widget para mostrar la cuadrícula de modelos
-  Widget _buildModelosGrid() {
-    if (_modelos.isEmpty) {
-      if (_selectedMarca == null) return const SizedBox.shrink();
-      return const Center(
+  Widget _buildModelosGrid({bool esBusquedaGlobal = false}) {
+    final listadoModelos = esBusquedaGlobal ? _modelosFiltrados : _modelos;
+
+    if (listadoModelos.isEmpty) {
+      if (!esBusquedaGlobal && _selectedMarca == null) {
+        return const SizedBox.shrink();
+      }
+      return Center(
         child: Text(
-          'No hay modelos para esta marca',
-          style: TextStyle(color: Colors.white70, fontSize: 16),
+          esBusquedaGlobal
+              ? 'No se encontraron modelos con ese nombre'
+              : 'No hay modelos para esta marca',
+          style: const TextStyle(color: Colors.white70, fontSize: 16),
         ),
       );
     }
@@ -444,9 +622,9 @@ class _ManualesScreenState extends State<ManualesScreen> {
         mainAxisSpacing: 10,
         childAspectRatio: 0.8, // Ajustar según el tamaño de la imagen y texto
       ),
-      itemCount: _modelos.length,
+      itemCount: listadoModelos.length,
       itemBuilder: (context, index) {
-        final modelo = _modelos[index];
+        final modelo = listadoModelos[index];
         final id = modelo['id'];
         final nombre =
             modelo['modelo']?.toString() ??
@@ -495,16 +673,26 @@ class _ManualesScreenState extends State<ManualesScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(6),
                     child: fullImgUrl.isNotEmpty
-                        ? Image.network(
-                            ApiConstants.getProxiedImageUrl(fullImgUrl),
+                        ? CachedNetworkImage(
+                            imageUrl: ApiConstants.getProxiedImageUrl(
+                              fullImgUrl,
+                            ),
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                                  Icons.image_not_supported,
-                                  color: Colors.grey,
-                                  size: 30,
+                            placeholder: (context, url) => const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                              size: 30,
+                            ),
                           )
                         : const Center(
                             child: Icon(

@@ -18,8 +18,8 @@ class ApiConstants {
       final host = Uri.base.host;
       // Si estamos corriendo la app flutter web en nuestro navegador
       if (host == 'localhost' || host == '127.0.0.1') {
-        // Usamos allorigins como proxy de CORS; es más permisivo con imágenes
-        return 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
+        // Usamos corsproxy.io como proxy de CORS; es rápido y estable para imágenes
+        return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
       }
     }
     return url;
