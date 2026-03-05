@@ -155,7 +155,7 @@ class _HomePageState extends State<HomePage> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               onPressed: () {
                 Navigator.pop(context);
                 _saveAndReset();
@@ -174,10 +174,10 @@ class _HomePageState extends State<HomePage> {
   void _saveAndReset() {
     setState(() {
       // Guardamos el resultado formateado antes de resetear
+      final String hoy =
+          "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
       _lastSessionSummary =
-          "RESULTADO DE HOY:\n"
-          "Trabajo: ${_formatDuration(_workDuration)}\n"
-          "Descanso: ${_formatDuration(_breakDuration)}";
+          "RESULTADOS|Hoy: $hoy|Trabajo: ${_formatDuration(_workDuration)}|Descanso: ${_formatDuration(_breakDuration)}";
 
       _isStarted = false;
       _isPaused = false;
@@ -275,10 +275,7 @@ class _HomePageState extends State<HomePage> {
             // --- CRONÓMETRO DE TRABAJO ---
             Text(
               "TIEMPO DE TRABAJO",
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             Text(
               _formatDuration(_workDuration),
@@ -315,25 +312,65 @@ class _HomePageState extends State<HomePage> {
             if (_lastSessionSummary != null)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
-                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.blueGrey.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(15),
+                  color: const Color(0xFF1F2937), // Gris oscuro (Slate 800)
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.5),
+                    color: Colors.red.withValues(alpha: 0.6),
+                    width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  _lastSessionSummary!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    height: 1.5,
-                  ),
+                child: Column(
+                  children: _lastSessionSummary!.split('|').map((line) {
+                    final isHeader = line == "RESULTADOS";
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: isHeader ? 16.0 : 8.0),
+                      child: Row(
+                        mainAxisAlignment: isHeader
+                            ? MainAxisAlignment.center
+                            : MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (isHeader)
+                            Text(
+                              line,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            )
+                          else ...[
+                            Text(
+                              line.split(': ')[0],
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              line.split(': ')[1],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
 
@@ -341,11 +378,7 @@ class _HomePageState extends State<HomePage> {
 
             // --- BOTONES ---
             if (!_isStarted) ...[
-              _actionButton(
-                'Iniciar',
-                Theme.of(context).colorScheme.primary,
-                _startWork,
-              ),
+              _actionButton('Iniciar', Colors.blue, _startWork),
             ] else ...[
               _actionButton(
                 _isPaused ? 'Reanudar' : 'Descanso',
@@ -353,8 +386,11 @@ class _HomePageState extends State<HomePage> {
                 _pauseResume,
               ),
               const SizedBox(height: 20),
-              _actionButton('Finalizar', Colors.red, _finishJornada),
+              _actionButton('Finalizar', Colors.blue, _finishJornada),
             ],
+            const SizedBox(height: 20),
+            _actionButton('Estadísticas', Colors.blue, _showStatisticsDialog),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -387,4 +423,254 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  // --- NUEVA FUNCIONALIDAD: ESTADÍSTICAS ---
+  // ... (rest of the implemented code follows)
+
+  void _showStatisticsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: const Color(0xFFF3F4F6),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 20,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Container(
+            width: double.infinity,
+            height: MediaQuery.of(context).size.height * 0.75,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Estadísticas',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: _buildPanel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Actividad Mensual',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: CustomPaint(painter: _BarChartPainter()),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Divider(),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 12, // Espacio horizontal entre items
+                          runSpacing: 8, // Espacio vertical entre líneas
+                          children: [
+                            _buildLegendItem(Colors.blue, 'Días trabajados'),
+                            _buildLegendItem(Colors.red, 'Ausencias'),
+                            _buildLegendItem(Colors.orange, 'Bajas'),
+                            _buildLegendItem(Colors.purple, 'Vacaciones'),
+                            _buildLegendItem(
+                              Colors.green,
+                              'Vacaciones pendientes',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSummaryRow(
+                              'Días trabajados: 0',
+                              'Ausencias: 0',
+                              'Bajas: 0',
+                            ),
+                            const SizedBox(height: 4),
+                            _buildSummaryRow(
+                              'Vacaciones: 0',
+                              'Vacaciones pendientes: 0',
+                              '',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Footer
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey.shade700,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Cerrar',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPanel({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildSummaryRow(String s1, String s2, String s3) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          if (s1.isNotEmpty) _summaryText(s1),
+          if (s1.isNotEmpty && s2.isNotEmpty) const SizedBox(width: 15),
+          if (s2.isNotEmpty) _summaryText(s2),
+          if (s2.isNotEmpty && s3.isNotEmpty) const SizedBox(width: 15),
+          if (s3.isNotEmpty) _summaryText(s3),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryText(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
+    );
+  }
+}
+
+// --- PINTORES PARA GRÁFICOS PERSONALIZADOS ---
+
+class _BarChartPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final barWidth = (size.width - 40) / 12;
+    final maxBarHeight = size.height - 40;
+
+    // Datos vacíos para conectar con API en el futuro
+    final List<double> heights = List.filled(12, 0.0);
+    final List<String> months = [
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic",
+    ];
+
+    final paintGrid = Paint()
+      ..color = Colors.grey.shade200
+      ..strokeWidth = 1;
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    // Grid lines
+    for (int i = 0; i <= 4; i++) {
+      double y = maxBarHeight - (i * maxBarHeight / 4);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paintGrid);
+    }
+
+    final barPaintBlue = Paint()..color = Colors.blue.withValues(alpha: 0.6);
+    final barPaintPurple = Paint()
+      ..color = Colors.purple.withValues(alpha: 0.6);
+
+    for (int i = 0; i < 12; i++) {
+      final x = i * barWidth + 10;
+      final h = (heights[i] / 160) * maxBarHeight;
+
+      // Barra principal
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x + 5, maxBarHeight - h, barWidth - 10, h),
+          const Radius.circular(4),
+        ),
+        i % 2 == 0 ? barPaintBlue : barPaintPurple,
+      );
+
+      // Etiquetas de meses
+      textPainter.text = TextSpan(
+        text: months[i],
+        style: const TextStyle(color: Colors.grey, fontSize: 10),
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(x + (barWidth - textPainter.width) / 2, maxBarHeight + 10),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

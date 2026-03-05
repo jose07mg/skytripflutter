@@ -23,7 +23,7 @@ class MenuLateral extends StatelessWidget {
       width:
           MediaQuery.of(context).size.width *
           0.60, // Ajustado a 60% para que se lea mejor
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black,
       child: SafeArea(
         child: Column(
           children: [
@@ -151,38 +151,47 @@ class MenuLateral extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        // Si está activo: fondo gris suave. Si no: transparente.
         color: isActive
-            ? Colors.grey.withValues(alpha: 0.15)
+            ? Colors.white.withValues(alpha: 0.05)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isActive
-              ? Theme.of(context).colorScheme.primary
-              : Colors.black54,
-          size: 22,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isActive
-                ? Theme.of(context).colorScheme.primary
-                : Colors.black87,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            fontSize: 15,
+      child: Stack(
+        children: [
+          if (isActive)
+            Positioned(
+              left: 0,
+              top: 12,
+              bottom: 12,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ListTile(
+            leading: Icon(
+              icon,
+              color: isActive ? Colors.white : Colors.white54,
+              size: 22,
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.white70,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
+            onTap: isActive
+                ? null
+                : () {
+                    Navigator.pushReplacementNamed(context, routeName);
+                  },
           ),
-        ),
-        // Si ya estamos en esa página, no hace nada al pulsar (evita recargas innecesarias)
-        onTap: isActive
-            ? null
-            : () {
-                // Usamos navegación por nombre para pasar por el AuthGuard.
-                // El menú se cierra automáticamente al reemplazar la ruta.
-                Navigator.pushReplacementNamed(context, routeName);
-              },
+        ],
       ),
     );
   }

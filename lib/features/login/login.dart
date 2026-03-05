@@ -223,10 +223,8 @@ class _LoginPageState extends State<LoginPage> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  disabledBackgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.5),
+                  backgroundColor: Colors.blue,
+                  disabledBackgroundColor: Colors.blue.withValues(alpha: 0.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

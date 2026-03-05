@@ -169,12 +169,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _botonSeleccionado == 0
-                            ? Theme.of(context).colorScheme.primary
+                            ? Colors.blue
                             : const Color(0xFF161E2E),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _botonSeleccionado == 0
-                              ? Theme.of(context).colorScheme.primary
+                              ? Colors.blue
                               : const Color(0x669E9E9E),
                         ),
                       ),
@@ -199,12 +199,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _botonSeleccionado == 1
-                            ? Theme.of(context).colorScheme.primary
+                            ? Colors.blue
                             : const Color(0xFF161E2E),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _botonSeleccionado == 1
-                              ? Theme.of(context).colorScheme.primary
+                              ? Colors.blue
                               : const Color(0x669E9E9E),
                         ),
                       ),
@@ -323,6 +323,7 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                         estado: estado,
                         pdf: pdfStatus,
                         telefono: telefono,
+                        isSigned: tienePdf,
                       );
                     },
                   ),
@@ -343,6 +344,7 @@ class AlbaranCard extends StatelessWidget {
   final String estado;
   final String pdf;
   final String telefono;
+  final bool isSigned;
 
   const AlbaranCard({
     super.key,
@@ -354,6 +356,7 @@ class AlbaranCard extends StatelessWidget {
     required this.estado,
     required this.pdf,
     required this.telefono,
+    required this.isSigned,
   });
 
   // Método para abrir el mapa
@@ -675,15 +678,11 @@ class AlbaranCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: telefono != 'S/N'
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.2)
+                          ? Colors.blue.withValues(alpha: 0.2)
                           : Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: telefono != 'S/N'
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
+                        color: telefono != 'S/N' ? Colors.blue : Colors.grey,
                       ),
                     ),
                     child: Column(
@@ -691,9 +690,7 @@ class AlbaranCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.phone,
-                          color: telefono != 'S/N'
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
+                          color: telefono != 'S/N' ? Colors.blue : Colors.grey,
                           size: 20,
                         ),
                         const SizedBox(height: 4),
@@ -701,7 +698,7 @@ class AlbaranCard extends StatelessWidget {
                           'LLAMAR',
                           style: TextStyle(
                             color: telefono != 'S/N'
-                                ? Theme.of(context).colorScheme.primary
+                                ? Colors.blue
                                 : Colors.grey,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -729,19 +726,27 @@ class AlbaranCard extends StatelessWidget {
                     width: 75,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.orangeAccent.withValues(alpha: 0.2),
+                      color: isSigned
+                          ? Colors.green.withValues(alpha: 0.2)
+                          : Colors.amber.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orangeAccent),
+                      border: Border.all(
+                        color: isSigned ? Colors.green : Colors.amber,
+                      ),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.draw, color: Colors.orangeAccent, size: 20),
-                        SizedBox(height: 4),
+                        Icon(
+                          Icons.draw,
+                          color: isSigned ? Colors.green : Colors.amber,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
                         Text(
                           'FIRMAR',
                           style: TextStyle(
-                            color: Colors.orangeAccent,
+                            color: isSigned ? Colors.green : Colors.amber,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
