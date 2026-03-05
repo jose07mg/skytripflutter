@@ -129,71 +129,37 @@ class _NominasPageState extends State<NominasPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary
-                                    .withValues(
-                                      alpha: 0.2,
-                                    ), // Fondo principal claro
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.picture_as_pdf,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 24,
+                            Text(
+                              'Nómina $monthName',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 15),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Nómina $monthName',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Año $selectedYear',
-                                  style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 4),
+                            Text(
+                              'Año $selectedYear',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
-                        ElevatedButton(
+                        IconButton(
                           onPressed: () {
                             // Acción para descargar o ver el PDF de ese mes
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.secondary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            minimumSize: Size.zero,
+                          icon: const Icon(
+                            Icons.picture_as_pdf,
+                            color: Colors.blue,
+                            size: 28,
                           ),
-                          child: const Text(
-                            'Ver',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          tooltip: 'Ver PDF',
                         ),
                       ],
                     ),
