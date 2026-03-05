@@ -46,11 +46,16 @@ class _LoginPageState extends State<LoginPage> {
         }
 
         if (canCheckBiometrics && isDeviceSupported) {
-          bool authenticated = await _localAuth.authenticate(
-            localizedReason: 'Inicia sesión con Face ID / Huella',
-            biometricOnly: true,
-            persistAcrossBackgrounding: true,
-          );
+          bool authenticated = false;
+          try {
+            authenticated = await _localAuth.authenticate(
+              localizedReason: 'Inicia sesión con Face ID / Huella',
+              biometricOnly: true,
+              persistAcrossBackgrounding: true,
+            );
+          } on Exception catch (e) {
+            debugPrint('Error durante autenticación biométrica: $e');
+          }
 
           if (authenticated) {
             _login(isBiometric: true);
