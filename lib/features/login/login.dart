@@ -83,45 +83,52 @@ class _LoginPageState extends State<LoginPage> {
 
       // Si fue login manual, preguntamos si quiere guardar credenciales
       if (!isBiometric) {
-        bool canCheckBiometrics = false;
-        bool isDeviceSupported = false;
-
         try {
-          canCheckBiometrics = await _localAuth.canCheckBiometrics;
-          isDeviceSupported = await _localAuth.isDeviceSupported();
-        } catch (e) {
-          debugPrint('Biometría no soportada en esta plataforma: $e');
-        }
+          bool canCheckBiometrics = false;
+          bool isDeviceSupported = false;
 
-        if (canCheckBiometrics && isDeviceSupported) {
-          if (!mounted) return;
-          bool? saveCredentials = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('¿Usar Face ID / Huella?'),
-              content: const Text(
-                '¿Quieres guardar tu contraseña para iniciar sesión con Face ID / Huella?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('No, gracias'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Sí, usar Face ID/Huella'),
-                ),
-              ],
-            ),
-          );
-
-          if (saveCredentials == true) {
-            await _secureStorage.write(key: 'username', value: username);
-            await _secureStorage.write(key: 'password', value: password);
-          } else {
-            await _secureStorage.delete(key: 'username');
-            await _secureStorage.delete(key: 'password');
+          try {
+            canCheckBiometrics = await _localAuth.canCheckBiometrics;
+            isDeviceSupported = await _localAuth.isDeviceSupported();
+          } catch (e) {
+            debugPrint('Biometría no soportada en esta plataforma: $e');
           }
+
+          if (canCheckBiometrics && isDeviceSupported) {
+            if (!mounted) return;
+            bool? saveCredentials = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('¿Usar Face ID / Huella?'),
+                content: const Text(
+                  '¿Quieres guardar tu contraseña para iniciar sesión con Face ID / Huella?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('No, gracias'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Sí, usar Face ID/Huella'),
+                  ),
+                ],
+              ),
+            );
+
+            if (saveCredentials == true) {
+              await _secureStorage.write(key: 'username', value: username);
+              await _secureStorage.write(key: 'password', value: password);
+            } else {
+              await _secureStorage.delete(key: 'username');
+              await _secureStorage.delete(key: 'password');
+            }
+          }
+        } catch (biometricError) {
+          // Capturamos cualquier error de biometría o storage para que el login no se bloquee
+          debugPrint(
+            'Error al procesar biometría, continuando con login normal: $biometricError',
+          );
         }
       }
 
