@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/widgets/common/menu_lateral.dart';
+import './widgets/statistics_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   bool _isStarted = false;
   bool _isPaused = false;
   String? _selectedPauseReason;
+  bool _showStatistics = false;
 
   // Variable para guardar el resultado del día y mostrarlo en pantalla
   String? _lastSessionSummary;
@@ -278,7 +280,7 @@ class _HomePageState extends State<HomePage> {
             Text(
               "TIEMPO DE TRABAJO",
               style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 14,
               ),
             ),
@@ -397,6 +399,26 @@ class _HomePageState extends State<HomePage> {
                 Theme.of(context).colorScheme.primary,
                 _finishJornada,
               ),
+            ],
+
+            const SizedBox(height: 30),
+
+            // --- BOTÓN DE ESTADÍSTICAS ---
+            _actionButton(
+              _showStatistics ? 'Ocultar Estadísticas' : 'Ver Estadísticas',
+              Colors.blue,
+              () {
+                setState(() {
+                  _showStatistics = !_showStatistics;
+                });
+              },
+            ),
+
+            // --- PANEL DE ESTADÍSTICAS ---
+            if (_showStatistics) ...[
+              const SizedBox(height: 20),
+              const StatisticsWidget(),
+              const SizedBox(height: 40),
             ],
           ],
         ),
