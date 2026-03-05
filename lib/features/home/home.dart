@@ -155,7 +155,9 @@ class _HomePageState extends State<HomePage> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
               onPressed: () {
                 Navigator.pop(context);
                 _saveAndReset();
@@ -173,11 +175,11 @@ class _HomePageState extends State<HomePage> {
 
   void _saveAndReset() {
     setState(() {
-      // Guardamos el resultado formateado antes de resetear
+      // Guardamos el resultado con etiquetas específicas para dar formato en la UI
+      final String hoy =
+          "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
       _lastSessionSummary =
-          "RESULTADO DE HOY:\n"
-          "Trabajo: ${_formatDuration(_workDuration)}\n"
-          "Descanso: ${_formatDuration(_breakDuration)}";
+          "RESULTADOS|Hoy: $hoy|Trabajo: ${_formatDuration(_workDuration)}|Descanso: ${_formatDuration(_breakDuration)}";
 
       _isStarted = false;
       _isPaused = false;
@@ -311,29 +313,70 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 30),
 
-            // --- RESULTADO DEL DÍA (Solo aparece al finalizar) ---
             if (_lastSessionSummary != null)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
-                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.blueGrey.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(15),
+                  color: const Color(0xFF1F2937), // Gris oscuro (Slate 800)
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.5),
+                    color: Colors.red.withValues(alpha: 0.6),
+                    width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  _lastSessionSummary!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    height: 1.5,
-                  ),
+                child: Column(
+                  children: _lastSessionSummary!.split('|').map((line) {
+                    final isHeader = line == "RESULTADOS";
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: isHeader ? 16.0 : 8.0),
+                      child: Row(
+                        mainAxisAlignment: isHeader
+                            ? MainAxisAlignment.center
+                            : MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (isHeader)
+                            Text(
+                              line,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            )
+                          else ...[
+                            Text(
+                              line.split(': ')[0],
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              line.split(': ')[1],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily:
+                                    'Courier', // Para que los números alineen
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
 
@@ -341,11 +384,7 @@ class _HomePageState extends State<HomePage> {
 
             // --- BOTONES ---
             if (!_isStarted) ...[
-              _actionButton(
-                'Iniciar',
-                Theme.of(context).colorScheme.primary,
-                _startWork,
-              ),
+              _actionButton('Iniciar', Colors.blue, _startWork),
             ] else ...[
               _actionButton(
                 _isPaused ? 'Reanudar' : 'Descanso',
@@ -353,7 +392,11 @@ class _HomePageState extends State<HomePage> {
                 _pauseResume,
               ),
               const SizedBox(height: 20),
-              _actionButton('Finalizar', Colors.red, _finishJornada),
+              _actionButton(
+                'Finalizar',
+                Theme.of(context).colorScheme.primary,
+                _finishJornada,
+              ),
             ],
           ],
         ),

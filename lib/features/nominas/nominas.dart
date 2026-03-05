@@ -177,7 +177,7 @@ class _NominasPageState extends State<NominasPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(
                               context,
-                            ).colorScheme.primary,
+                            ).colorScheme.secondary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),

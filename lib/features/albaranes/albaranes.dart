@@ -169,12 +169,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _botonSeleccionado == 0
-                            ? Theme.of(context).colorScheme.primary
+                            ? Theme.of(context).colorScheme.secondary
                             : const Color(0xFF161E2E),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _botonSeleccionado == 0
-                              ? Theme.of(context).colorScheme.primary
+                              ? Theme.of(context).colorScheme.secondary
                               : const Color(0x669E9E9E),
                         ),
                       ),
@@ -199,12 +199,12 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: _botonSeleccionado == 1
-                            ? Theme.of(context).colorScheme.primary
+                            ? Theme.of(context).colorScheme.secondary
                             : const Color(0xFF161E2E),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _botonSeleccionado == 1
-                              ? Theme.of(context).colorScheme.primary
+                              ? Theme.of(context).colorScheme.secondary
                               : const Color(0x669E9E9E),
                         ),
                       ),
@@ -314,6 +314,9 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                         telefono = 'S/N';
                       }
 
+                      final String firmado =
+                          albaran['firmado']?.toString() ?? 'N';
+
                       return AlbaranCard(
                         numAlbaran: numAlbaran,
                         fechaEntrega: fechaEntrega,
@@ -323,6 +326,7 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
                         estado: estado,
                         pdf: pdfStatus,
                         telefono: telefono,
+                        firmado: firmado,
                       );
                     },
                   ),
@@ -333,7 +337,6 @@ class _AlbaranesPageState extends State<AlbaranesPage> {
   }
 }
 
-// --- WIDGET TARJETA DE ALBARÁN ---
 class AlbaranCard extends StatelessWidget {
   final String numAlbaran;
   final String fechaEntrega;
@@ -343,6 +346,7 @@ class AlbaranCard extends StatelessWidget {
   final String estado;
   final String pdf;
   final String telefono;
+  final String firmado;
 
   const AlbaranCard({
     super.key,
@@ -354,6 +358,7 @@ class AlbaranCard extends StatelessWidget {
     required this.estado,
     required this.pdf,
     required this.telefono,
+    required this.firmado,
   });
 
   // Método para abrir el mapa
@@ -627,7 +632,7 @@ class AlbaranCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: (direccion.isNotEmpty && direccion != 'S/N')
-                            ? const Color(0x669E9E9E) // grey con 0.4
+                            ? Theme.of(context).colorScheme.secondary
                             : Colors.grey,
                       ),
                     ),
@@ -637,7 +642,7 @@ class AlbaranCard extends StatelessWidget {
                         Icon(
                           Icons.location_on,
                           color: (direccion.isNotEmpty && direccion != 'S/N')
-                              ? Colors.white
+                              ? Theme.of(context).colorScheme.secondary
                               : Colors.grey,
                           size: 20,
                         ),
@@ -646,7 +651,7 @@ class AlbaranCard extends StatelessWidget {
                           'MAPA',
                           style: TextStyle(
                             color: (direccion.isNotEmpty && direccion != 'S/N')
-                                ? Colors.white
+                                ? Theme.of(context).colorScheme.secondary
                                 : Colors.grey,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -675,15 +680,11 @@ class AlbaranCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: telefono != 'S/N'
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.2)
+                          ? Colors.blue.withValues(alpha: 0.2)
                           : Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: telefono != 'S/N'
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
+                        color: telefono != 'S/N' ? Colors.blue : Colors.grey,
                       ),
                     ),
                     child: Column(
@@ -691,9 +692,7 @@ class AlbaranCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.phone,
-                          color: telefono != 'S/N'
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
+                          color: telefono != 'S/N' ? Colors.blue : Colors.grey,
                           size: 20,
                         ),
                         const SizedBox(height: 4),
@@ -701,7 +700,7 @@ class AlbaranCard extends StatelessWidget {
                           'LLAMAR',
                           style: TextStyle(
                             color: telefono != 'S/N'
-                                ? Theme.of(context).colorScheme.primary
+                                ? Colors.blue
                                 : Colors.grey,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -713,7 +712,6 @@ class AlbaranCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // Botón FIRMAR
                 InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () {
@@ -729,19 +727,33 @@ class AlbaranCard extends StatelessWidget {
                     width: 75,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.orangeAccent.withValues(alpha: 0.2),
+                      color: firmado == 'S'
+                          ? Colors.green.withValues(alpha: 0.2)
+                          : Colors.yellowAccent.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orangeAccent),
+                      border: Border.all(
+                        color: firmado == 'S'
+                            ? Colors.green
+                            : Colors.yellowAccent,
+                      ),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.draw, color: Colors.orangeAccent, size: 20),
-                        SizedBox(height: 4),
+                        Icon(
+                          Icons.draw,
+                          color: firmado == 'S'
+                              ? Colors.green
+                              : Colors.yellowAccent,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
                         Text(
                           'FIRMAR',
                           style: TextStyle(
-                            color: Colors.orangeAccent,
+                            color: firmado == 'S'
+                                ? Colors.green
+                                : Colors.yellowAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
