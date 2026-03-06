@@ -136,12 +136,13 @@ class _StatisticsWidgetState extends State<StatisticsWidget> {
           ),
           const SizedBox(height: 16),
           GridView.count(
-            crossAxisCount: 2,
+            crossAxisCount: 1,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
+            mainAxisSpacing: 12,
             crossAxisSpacing: 10,
-            childAspectRatio: 1.3,
+            childAspectRatio:
+                3.5, // Not used heavily since count is 1, but safe to change to ListView or Column instead
             children: [
               _buildStatCard(
                 title: 'Horas trabajadas',
@@ -162,12 +163,6 @@ class _StatisticsWidgetState extends State<StatisticsWidget> {
                 valueColor: const Color(0xFFF7B71D), // Orange from screenshot
               ),
               _buildStatCard(
-                title: 'Fichajes / mes',
-                value: currentData['fichajes'],
-                subtitle: ' ',
-                valueColor: Colors.white,
-              ),
-              _buildStatCard(
                 title: 'Pausas',
                 value: currentData['pausas'],
                 subtitle: '${currentData['numPausas']} pausas',
@@ -181,10 +176,6 @@ class _StatisticsWidgetState extends State<StatisticsWidget> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(color: Colors.grey),
-          const SizedBox(height: 8),
-          _buildBottomSummary(currentData),
         ],
       ),
     );
@@ -197,115 +188,53 @@ class _StatisticsWidgetState extends State<StatisticsWidget> {
     required Color valueColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(51), // 0.2 * 255 = 51
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.withAlpha(51)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'PERIODO SELECCIONADO',
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: valueColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const Spacer(),
           Text(
             value,
             style: TextStyle(
               color: valueColor == Colors.white ? Colors.white : valueColor,
-              fontSize: 16,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               fontFamily: 'Courier',
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 10),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBottomSummary(Map<String, dynamic> data) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildLegendItem(Colors.blueAccent, 'Trabajados'),
-            _buildLegendItem(Colors.redAccent, 'Ausencias'),
-            _buildLegendItem(const Color(0xFFF7B71D), 'Bajas'),
-            _buildLegendItem(const Color(0xFF2FA344), 'Vacaciones'),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildSummaryCount('Días Trabajados:', data['diasTrabajados']),
-            _buildSummaryCount('Ausencias:', data['ausencias']),
-            _buildSummaryCount('Bajas:', data['bajas']),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircleAvatar(radius: 4, backgroundColor: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 10),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCount(String label, String count) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          count,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-      ],
     );
   }
 }

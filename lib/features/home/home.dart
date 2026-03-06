@@ -178,10 +178,10 @@ class _HomePageState extends State<HomePage> {
   void _saveAndReset() {
     setState(() {
       // Guardamos el resultado con etiquetas específicas para dar formato en la UI
-      final String hoy =
+      final String fecha =
           "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
       _lastSessionSummary =
-          "RESULTADOS|Hoy: $hoy|Trabajo: ${_formatDuration(_workDuration)}|Descanso: ${_formatDuration(_breakDuration)}";
+          "RESULTADOS|Fecha: $fecha|Trabajo: ${_formatDuration(_workDuration)}|Descanso: ${_formatDuration(_breakDuration)}";
 
       _isStarted = false;
       _isPaused = false;
