@@ -13,6 +13,13 @@ echo " Configuración de Biometría (RMS DAM)"
 echo "======================================"
 echo ""
 
+# Detectar sistema operativo para compatibilidad de 'sed'
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  SED_INPLACE=(sed -i '')
+else
+  SED_INPLACE=(sed -i)
+fi
+
 # ─── iOS: NSFaceIDUsageDescription ───────────────────────────────────────────
 PLIST="ios/Runner/Info.plist"
 
@@ -27,7 +34,7 @@ else
       echo "✅ iOS: Permiso Face ID añadido correctamente."
     else
       # Método alternativo con sed
-      sed -i '' 's|</dict>|\t<key>NSFaceIDUsageDescription</key>\n\t<string>Esta aplicación usa Face ID para iniciar sesión de forma segura.</string>\n</dict>|' "$PLIST"
+      "${SED_INPLACE[@]}" 's|</dict>|  <key>NSFaceIDUsageDescription</key>\'$'\n''  <string>Esta aplicación usa Face ID para iniciar sesión de forma segura.</string>\'$'\n''</dict>|' "$PLIST"
       echo "✅ iOS: Permiso Face ID añadido (método alternativo)."
     fi
   fi
@@ -45,7 +52,7 @@ else
     echo "✅ Android: Permiso USE_BIOMETRIC ya configurado."
   else
     # Insertar permisos justo antes de <application
-    sed -i '' 's|<application|<uses-permission android:name="android.permission.USE_BIOMETRIC"/>\n    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>\n    <application|' "$MANIFEST"
+    "${SED_INPLACE[@]}" 's|<application|<uses-permission android:name="android.permission.USE_BIOMETRIC"/>\'$'\n''    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>\'$'\n''    <application|' "$MANIFEST"
     echo "✅ Android: Permisos USE_BIOMETRIC y USE_FINGERPRINT añadidos."
   fi
 fi
@@ -64,9 +71,9 @@ else
     echo "✅ Android: MainActivity ya usa FlutterFragmentActivity."
   else
     # Cambiar FlutterActivity por FlutterFragmentActivity
-    sed -i '' 's|io.flutter.embedding.android.FlutterActivity|io.flutter.embedding.android.FlutterFragmentActivity|g' "$MAIN_ACTIVITY"
-    sed -i '' 's|FlutterActivity()|FlutterFragmentActivity()|g' "$MAIN_ACTIVITY"
-    sed -i '' 's|extends FlutterActivity|extends FlutterFragmentActivity|g' "$MAIN_ACTIVITY"
+    "${SED_INPLACE[@]}" 's|io.flutter.embedding.android.FlutterActivity|io.flutter.embedding.android.FlutterFragmentActivity|g' "$MAIN_ACTIVITY"
+    "${SED_INPLACE[@]}" 's|FlutterActivity()|FlutterFragmentActivity()|g' "$MAIN_ACTIVITY"
+    "${SED_INPLACE[@]}" 's|extends FlutterActivity|extends FlutterFragmentActivity|g' "$MAIN_ACTIVITY"
     echo "✅ Android: MainActivity actualizada a FlutterFragmentActivity."
   fi
 fi

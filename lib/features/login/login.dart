@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
+
+import '../../core/services/language_settings.dart';
 import '../auth/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,255 +12,391 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _userController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  final LocalAuthentication _localAuth = LocalAuthentication();
+  final _userController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _codeController = TextEditingController();
+  final _authService = AuthService();
 
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkSavedCredentialsAndAuthenticate();
-  }
-
-  Future<void> _checkSavedCredentialsAndAuthenticate() async {
-    try {
-      String? savedUsername = await _secureStorage.read(key: 'username');
-      String? savedPassword = await _secureStorage.read(key: 'password');
-
-      if (savedUsername != null && savedPassword != null) {
-        setState(() {
-          _userController.text = savedUsername;
-          _passwordController.text = savedPassword;
-        });
-        bool canCheckBiometrics = false;
-        bool isDeviceSupported = false;
-
-        try {
-          canCheckBiometrics = await _localAuth.canCheckBiometrics;
-          isDeviceSupported = await _localAuth.isDeviceSupported();
-        } on Exception catch (e) {
-          debugPrint('Biometría no soportada en esta plataforma: $e');
-        }
-
-        if (canCheckBiometrics && isDeviceSupported) {
-          bool authenticated = false;
-          try {
-            authenticated = await _localAuth.authenticate(
-              localizedReason: 'Inicia sesión con Face ID / Huella',
-              biometricOnly: true,
-              persistAcrossBackgrounding: true,
-            );
-          } on Exception catch (e) {
-            debugPrint('Error durante autenticación biométrica: $e');
-          }
-
-          if (authenticated) {
-            _login(isBiometric: true);
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error al verificar credenciales guardadas: $e');
-    }
-  }
-
-  Future<void> _login({bool isBiometric = false}) async {
-    // Evita múltiples peticiones si ya hay una en curso
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    String username = _userController.text;
-    String password = _passwordController.text;
-
-    try {
-      await _authService.signInWithUsernameAndPassword(
-        username: username,
-        password: password,
-      );
-
-      if (!mounted) return;
-
-      // Si fue login manual, preguntamos si quiere guardar credenciales
-      if (!isBiometric) {
-        try {
-          bool canCheckBiometrics = false;
-          bool isDeviceSupported = false;
-
-          try {
-            canCheckBiometrics = await _localAuth.canCheckBiometrics;
-            isDeviceSupported = await _localAuth.isDeviceSupported();
-          } catch (e) {
-            debugPrint('Biometría no soportada en esta plataforma: $e');
-          }
-
-          if (canCheckBiometrics && isDeviceSupported) {
-            if (!mounted) return;
-            bool? saveCredentials = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('¿Usar Face ID / Huella?'),
-                content: const Text(
-                  '¿Quieres guardar tu contraseña para iniciar sesión con Face ID / Huella?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('No, gracias'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text('Sí, usar Face ID/Huella'),
-                  ),
-                ],
-              ),
-            );
-
-            if (saveCredentials == true) {
-              await _secureStorage.write(key: 'username', value: username);
-              await _secureStorage.write(key: 'password', value: password);
-            } else {
-              await _secureStorage.delete(key: 'username');
-              await _secureStorage.delete(key: 'password');
-            }
-          }
-        } catch (biometricError) {
-          // Capturamos cualquier error de biometría o storage para que el login no se bloquee
-          debugPrint(
-            'Error al procesar biometría, continuando con login normal: $biometricError',
-          );
-        }
-      }
-
-      // Si el login es exitoso, navegamos a Home
-      // Usamos la ruta nombrada para que sea consistente con el resto de la app
-      // y respete cualquier lógica de enrutamiento global.
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
-    } on AuthException catch (e) {
-      // Si hay un error de autenticación, lo mostramos y limpiamos el campo
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-      _passwordController.clear();
-    } catch (e) {
-      // Captura otros errores (red, etc.)
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error de conexión: $e')));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // He ajustado la ruta del asset a 'assets/images/logo.png'
-            // para que coincida con la estructura de tu HomePage
-            Image.asset(
-              'assets/images/logo.png',
-              height: 120,
-              fit: BoxFit.contain,
-              errorBuilder: (c, e, s) =>
-                  const Icon(Icons.business, color: Colors.white, size: 120),
-            ),
-            const SizedBox(height: 50),
-            const Text(
-              'Usuario',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _userController,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Contraseña',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.secondary,
-                  disabledBackgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.secondary.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      )
-                    : const Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  bool _obscurePassword = true;
+  // 1 = password step, 2 = 2FA step
+  int _step = 1;
 
   @override
   void dispose() {
     _userController.dispose();
     _passwordController.dispose();
+    _codeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_isLoading) return;
+    final username = _userController.text.trim();
+    final password = _passwordController.text;
+
+    if (username.isEmpty || password.isEmpty) {
+      _showError(LanguageSettings.instance.tr('login_error_empty'));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final needsTotp = await _authService.signInWithUsernameAndPassword(
+        username: username,
+        password: password,
+      );
+      if (!mounted) return;
+
+      if (needsTotp) {
+        setState(() {
+          _step = 2;
+          _isLoading = false;
+        });
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+      _passwordController.clear();
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _verify2Fa() async {
+    final code = _codeController.text.trim();
+    if (code.length != 6) {
+      _showError(LanguageSettings.instance.tr('login_2fa_invalid'));
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await _authService.completeLoginWithTotp(code);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+      _codeController.clear();
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _backToPassword() {
+    _authService.signOut();
+    setState(() {
+      _step = 1;
+      _codeController.clear();
+    });
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: LanguageSettings.instance.locale,
+      builder: (context, locale, _) {
+        return Scaffold(
+          backgroundColor: const Color(0xFF003B95),
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  transitionBuilder: (child, anim) => SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(1, 0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                        parent: anim, curve: Curves.easeOutCubic)),
+                    child: FadeTransition(opacity: anim, child: child),
+                  ),
+                  child: _step == 1
+                      ? _buildPasswordStep()
+                      : _buildTwoFaStep(),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPasswordStep() {
+    final tr = LanguageSettings.instance.tr;
+    return Column(
+      key: const ValueKey('step1'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Logo
+        Image.asset(
+          'assets/images/logo.png',
+          height: 150,
+          errorBuilder: (ctx, err, stack) => const Icon(
+            Icons.airplanemode_active,
+            color: Colors.white,
+            size: 100,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'SkyTrip',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          tr('login_tagline'),
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 40),
+
+        // Username field
+        _inputField(
+          controller: _userController,
+          hint: tr('login_username'),
+          icon: Icons.person_outline,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 16),
+
+        // Password field
+        _inputField(
+          controller: _passwordController,
+          hint: tr('login_password'),
+          icon: Icons.lock_outline,
+          obscure: _obscurePassword,
+          suffix: IconButton(
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              color: Colors.grey,
+            ),
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+          ),
+          onSubmitted: (_) => _login(),
+        ),
+        const SizedBox(height: 28),
+
+        // Login button
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _login,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003B95),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white),
+                  )
+                : Text(
+                    tr('login_button'),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Register link
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(tr('login_no_account'),
+                style: const TextStyle(color: Colors.white70)),
+            TextButton(
+              onPressed: () => Navigator.pushNamed(context, '/register'),
+              child: Text(
+                tr('login_register'),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+
+        // About us link
+        TextButton(
+          onPressed: () => Navigator.pushNamed(context, '/about-us'),
+          child: Text(
+            tr('login_about'),
+            style: const TextStyle(color: Colors.white60, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTwoFaStep() {
+    final tr = LanguageSettings.instance.tr;
+    return Column(
+      key: const ValueKey('step2'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Icon
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.shield_outlined,
+              color: Colors.white, size: 44),
+        ),
+        const SizedBox(height: 24),
+
+        Text(
+          tr('login_2fa_title'),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          tr('login_2fa_subtitle'),
+          style: const TextStyle(fontSize: 14, color: Colors.white70),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 36),
+
+        // Code input
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: TextField(
+            controller: _codeController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            textAlign: TextAlign.center,
+            autofocus: true,
+            style: const TextStyle(
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 12,
+              color: Color(0xFF1A1F36),
+            ),
+            decoration: const InputDecoration(
+              hintText: '······',
+              hintStyle: TextStyle(
+                color: Color(0xFFCDD5E8),
+                fontSize: 34,
+                letterSpacing: 12,
+                fontWeight: FontWeight.w900,
+              ),
+              counterText: '',
+              border: InputBorder.none,
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+            ),
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onSubmitted: (_) => _verify2Fa(),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Verify button
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: _verify2Fa,
+            icon: const Icon(Icons.verified_user_outlined),
+            label: Text(
+              tr('login_2fa_button'),
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003B95),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Back link
+        TextButton.icon(
+          onPressed: _backToPassword,
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 14, color: Colors.white70),
+          label: Text(
+            tr('login_2fa_back'),
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscure = false,
+    Widget? suffix,
+    ValueChanged<String>? onSubmitted,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscure,
+      style: const TextStyle(color: Colors.black87),
+      onSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Colors.grey),
+        suffixIcon: suffix,
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: const Color(0xF0FFFFFF),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+    );
   }
 }

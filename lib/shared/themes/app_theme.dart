@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:rms/shared/themes/text_theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:skytrip/shared/themes/text_theme.dart';
 
 import 'color_scheme.dart';
 

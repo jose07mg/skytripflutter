@@ -3,25 +3,59 @@ import 'package:flutter/foundation.dart';
 class ApiConstants {
   // IMPORTANTE: Este archivo está en el .gitignore.
   // Cambia esta URL base cuando estés debuggeando en un dispositivo físico.
-  // Por ejemplo, para un celular físico usa la IP de tu PC: 'http://192.168.X.X/RMSmira_api/public'
-  // Para emulador Android: 'http://10.0.2.2/RMSmira_api/public'
-  // Para emulador iOS o Web: 'http://localhost/RMSmira_api/public'
+  // Por ejemplo, para un celular físico usa la IP de tu PC: 'http://192.168.X.X/skytrip_api/public'
+  // Para emulador Android: 'http://10.0.2.2/skytrip_api/public'
+  // Para emulador iOS o Web con XAMPP: 'http://localhost/skytrip_api/public'
 
-  static const String baseUrl = 'https://www.miradigital.es/RMSmira_api/public';
-  static const String webUrl = 'https://www.miradigital.es/RMSmira';
-  static const String imageUrl = 'https://www.miradigital.es/RMSmira/uploadimg';
+  // Si usas XAMPP, el puerto por defecto es el 80.
+  // Si usas el DOCKER del proyecto, cambia a 'http://localhost:9000/skytrip_api/public'.
+  static String get baseUrl {
+    return 'https://skytriproyecto-production.up.railway.app';
+  }
 
-  /// Aplica proxy CORS cuando se ejecuta en la versión Web para desarrollo/local
-  /// para evitar el bloqueo del navegador por Access-Control-Allow-Origin
-  static String getProxiedImageUrl(String url) {
-    if (kIsWeb) {
-      final host = Uri.base.host;
-      // Si estamos corriendo la app flutter web en nuestro navegador
-      if (host == 'localhost' || host == '127.0.0.1') {
-        // Usamos corsproxy.io como proxy de CORS; es rápido y estable para imágenes
-        return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
-      }
+  static String get favoritesEndpoint =>
+      '$baseUrl/favoritos'; // Para Hoteles en BD
+  static String get reservasEndpoint =>
+      '$baseUrl/reservas'; // Para Reservas en BD
+  static String get changePasswordEndpoint => '$baseUrl/usuarios';
+  static const String imageUrl = 'https://www.skytrip.es/skytrip/uploadimg';
+
+  /// Normaliza imágenes recibidas desde el backend.
+  /// Soporta valores nulos, rutas relativas y URLs completas.
+  static String normalizeImageUrl(dynamic imageValue) {
+    if (imageValue == null) return '';
+    if (imageValue is List && imageValue.isNotEmpty) {
+      return normalizeImageUrl(imageValue.first);
     }
+
+    final imageString = imageValue.toString().trim();
+    if (imageString.isEmpty) return '';
+
+    if (imageString.startsWith('http')) {
+      return getProxiedImageUrl(imageString);
+    }
+
+    var normalizedPath = imageString.replaceAll(RegExp(r'^/+'), '');
+    if (normalizedPath.toLowerCase().startsWith('uploadimg/')) {
+      normalizedPath = normalizedPath.substring('uploadimg/'.length);
+      final candidate = '$imageUrl/$normalizedPath';
+      return getProxiedImageUrl(candidate);
+    }
+
+    if (normalizedPath.toLowerCase().startsWith('skytrip/uploadimg/')) {
+      normalizedPath = normalizedPath.substring('skytrip/uploadimg/'.length);
+      final candidate = '$imageUrl/$normalizedPath';
+      return getProxiedImageUrl(candidate);
+    }
+
+    final candidate = '$imageUrl/$normalizedPath';
+    return getProxiedImageUrl(candidate);
+  }
+
+  /// Las imágenes vienen de CDNs (Unsplash, Google, Booking…) que ya envían
+  /// Access-Control-Allow-Origin: * — no se necesita proxy CORS.
+  /// Se devuelve la URL tal cual en todos los entornos.
+  static String getProxiedImageUrl(String url) {
     return url;
   }
 }
