@@ -3,7 +3,8 @@
 .vscode
 .dart_tool
 .pub-cache
-build
+build/*
+!build/web
 android
 ios
 linux
