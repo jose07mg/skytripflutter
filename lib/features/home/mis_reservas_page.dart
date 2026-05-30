@@ -221,20 +221,24 @@ class _MisReservasPageState extends State<MisReservasPage>
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              LanguageSettings.instance.tr('reservas_cancelled_ok'),
-            ),
+            content: Text(LanguageSettings.instance.tr('reservas_cancelled_ok')),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
         _loadReservas();
       } else {
+        String errMsg = LanguageSettings.instance.tr('reservas_cancel_error');
+        try {
+          final b = jsonDecode(response.body) as Map<String, dynamic>;
+          final s = b['error']?.toString() ?? '';
+          if (s.isNotEmpty) errMsg = s;
+        } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              LanguageSettings.instance.tr('reservas_cancel_error'),
-            ),
+            content: Text(errMsg),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
