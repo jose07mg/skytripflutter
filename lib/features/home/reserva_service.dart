@@ -51,10 +51,18 @@ class ReservaService {
         }),
       ).timeout(const Duration(seconds: 15));
 
-      return response.statusCode == 200 || response.statusCode == 201;
-    } on Exception catch (e) {
-      debugPrint('Error al crear reserva: $e');
-      return false;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      // Lanzar excepción con el mensaje real del servidor
+      String serverMsg = 'Error ${response.statusCode}';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        serverMsg = body['error']?.toString() ?? body['message']?.toString() ?? serverMsg;
+      } catch (_) {}
+      throw Exception(serverMsg);
+    } on Exception {
+      rethrow;
     }
   }
 

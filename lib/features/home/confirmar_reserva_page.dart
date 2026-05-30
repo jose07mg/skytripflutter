@@ -113,12 +113,14 @@ class _ConfirmarReservaPageState extends State<ConfirmarReservaPage> {
     final fechaActual = _fechaActual;
     if (fechaActual == null) return 0;
     final precioNoche = double.tryParse(
-          (widget.habitacion?['precio_noche'] ?? widget.hotel['price'])
-              .toString(),
-        ) ??
-        0;
-    final noches = fechaActual.duration.inDays + 1;
-    return precioNoche * noches;
+          (widget.habitacion?['precio_noche']
+              ?? widget.habitacion?['price']
+              ?? widget.hotel['precio_noche']
+              ?? widget.hotel['price'])
+              ?.toString() ?? '0',
+        ) ?? 0;
+    final noches = fechaActual.duration.inDays;
+    return precioNoche * (noches > 0 ? noches : 1);
   }
 
   double get _precioPorNoche =>
@@ -455,8 +457,10 @@ class _ConfirmarReservaPageState extends State<ConfirmarReservaPage> {
                 }
 
                 try {
-                  final idHotel =
-                      int.tryParse(widget.hotel['idHotel'].toString()) ?? 0;
+                  final rawId = widget.hotel['id_hotel']
+                      ?? widget.hotel['idHotel']
+                      ?? widget.hotel['id'];
+                  final idHotel = int.tryParse(rawId?.toString() ?? '0') ?? 0;
                   if (idHotel == 0) throw Exception('ID de hotel no válido');
 
                   final idHabitacionRaw =
@@ -502,9 +506,10 @@ class _ConfirmarReservaPageState extends State<ConfirmarReservaPage> {
                   }
                 } catch (e) {
                   if (!context.mounted) return;
+                  final msg = e.toString().replaceFirst('Exception: ', '');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(tr('booking_error')),
+                      content: Text(msg.isNotEmpty ? msg : tr('booking_error')),
                       backgroundColor: Colors.red,
                       behavior: SnackBarBehavior.floating,
                     ),

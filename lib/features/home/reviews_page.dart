@@ -697,14 +697,17 @@ class _ReviewsPageState extends State<ReviewsPage> {
   }
 
   Widget _buildReviewForm() {
+    final isLoggedIn = AuthService().isAuthenticated;
     return Container(
       color: Theme.of(context).colorScheme.surface,
       margin: const EdgeInsets.only(bottom: 10),
       child: Column(
         children: [
-          // Toggle header
+          // Toggle header — si no está logueado, muestra aviso en lugar de flecha
           InkWell(
-            onTap: () => setState(() => _formExpanded = !_formExpanded),
+            onTap: isLoggedIn
+                ? () => setState(() => _formExpanded = !_formExpanded)
+                : null,
             child: Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20, vertical: 16),
@@ -714,7 +717,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: _blue,
+                      color: isLoggedIn ? _blue : const Color(0xFF9BA8C2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.rate_review_outlined,
@@ -730,26 +733,34 @@ class _ReviewsPageState extends State<ReviewsPage> {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
                                 color: Theme.of(context).colorScheme.onSurface)),
-                        Text(LanguageSettings.instance.tr('reviews_share'),
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppColorScheme.subtitleFor(context))),
+                        Text(
+                          isLoggedIn
+                              ? LanguageSettings.instance.tr('reviews_share')
+                              : LanguageSettings.instance.tr('reviews_login_required'),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: isLoggedIn
+                                  ? AppColorScheme.subtitleFor(context)
+                                  : Colors.orange.shade700)),
                       ],
                     ),
                   ),
-                  AnimatedRotation(
-                    turns: _formExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(Icons.keyboard_arrow_down,
-                        color: AppColorScheme.accentFor(context)),
-                  ),
+                  if (isLoggedIn)
+                    AnimatedRotation(
+                      turns: _formExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.keyboard_arrow_down,
+                          color: AppColorScheme.accentFor(context)),
+                    )
+                  else
+                    const Icon(Icons.lock_outline, color: Color(0xFF9BA8C2), size: 18),
                 ],
               ),
             ),
           ),
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 220),
-            crossFadeState: _formExpanded
+            crossFadeState: (_formExpanded && isLoggedIn)
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
             secondChild: const SizedBox.shrink(),
