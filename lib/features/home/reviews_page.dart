@@ -266,7 +266,27 @@ class _ReviewsPageState extends State<ReviewsPage> {
         });
         _loadReviews();
       } else {
-        throw Exception('HTTP ${response.statusCode}');
+        // Mostrar el mensaje real del servidor
+        String errorMsg = LanguageSettings.instance.tr('reviews_submit_error');
+        try {
+          final body = jsonDecode(response.body) as Map<String, dynamic>;
+          final serverMsg = body['error']?.toString() ?? '';
+          if (serverMsg.isNotEmpty) {
+            if (response.statusCode == 409) {
+              errorMsg = LanguageSettings.instance.tr('reviews_already_reviewed');
+            } else {
+              errorMsg = serverMsg;
+            }
+          }
+        } catch (_) {}
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: response.statusCode == 409 ? Colors.orange : Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -274,6 +294,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
         SnackBar(
           content: Text(LanguageSettings.instance.tr('reviews_submit_error')),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
