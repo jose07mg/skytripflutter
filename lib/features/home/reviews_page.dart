@@ -27,10 +27,13 @@ class _ReviewsPageState extends State<ReviewsPage> {
 
   // Form state
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   int _selectedHotelId = 0;
+  String _selectedHotelName = '';
   double _rating = 5.0;
   List<Map<String, dynamic>> _hoteles = [];
   bool _formExpanded = false;
+  String _filterQuery = '';
 
   static const List<Map<String, dynamic>> _mockReviews = [
     {
@@ -85,6 +88,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
   @override
   void dispose() {
     _commentController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -148,15 +152,17 @@ class _ReviewsPageState extends State<ReviewsPage> {
                 } catch (_) {
                   date = DateTime.now();
                 }
-                final name =
-                    r['usuario_nombre']?.toString() ?? 'Usuario';
+                final name = r['usuario_nombre']?.toString() ?? 'Usuario';
+                final hotel = r['hotel_nombre']?.toString() ??
+                    _hoteles.firstWhere(
+                      (h) => _parseInt(h['id']) == _parseInt(r['id_hotel']),
+                      orElse: () => {'name': 'Hotel'},
+                    )['name']?.toString() ?? 'Hotel';
                 return {
                   'id': _parseInt(r['id_review']),
-                  'hotelName':
-                      r['hotel_nombre']?.toString() ?? 'Hotel',
+                  'hotelName': hotel,
                   'userName': name,
-                  'userInitial':
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  'userInitial': name.isNotEmpty ? name[0].toUpperCase() : '?',
                   'rating': _parseDouble(r['puntuacion']),
                   'comment': r['comentario']?.toString() ?? '',
                   'date': date,
@@ -254,6 +260,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
         _commentController.clear();
         setState(() {
           _selectedHotelId = 0;
+          _selectedHotelName = '';
           _rating = 5.0;
           _formExpanded = false;
         });
@@ -330,6 +337,116 @@ class _ReviewsPageState extends State<ReviewsPage> {
   }
 
 
+  // Muestra un diálogo para buscar hotel con lupa
+  Future<void> _showHotelSearch(BuildContext context) async {
+    final searchCtrl = TextEditingController();
+    Map<String, dynamic>? selected;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) {
+          final query = searchCtrl.text.toLowerCase();
+          final filtered = _hoteles.where((h) {
+            final name = h['name'].toString().toLowerCase();
+            final city = h['city'].toString().toLowerCase();
+            return query.isEmpty || name.contains(query) || city.contains(query);
+          }).toList();
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(LanguageSettings.instance.tr('reviews_select_hotel')),
+            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 380,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: searchCtrl,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: LanguageSettings.instance.tr('reviews_search_hotel_hint'),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF6B7A99)),
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                    onChanged: (_) => setDlg(() {}),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(child: Text('Sin resultados'))
+                        : ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (_, i) {
+                              final h = filtered[i];
+                              final isSelected = selected?['id'] == h['id'];
+                              return ListTile(
+                                dense: true,
+                                selected: isSelected,
+                                selectedTileColor: const Color(0xFFEEF3FF),
+                                leading: Icon(
+                                  Icons.hotel_outlined,
+                                  size: 18,
+                                  color: isSelected ? const Color(0xFF003B95) : const Color(0xFF9BA8C2),
+                                ),
+                                title: Text(h['name'].toString(),
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                      fontSize: 14,
+                                    )),
+                                subtitle: Text(h['city'].toString(),
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF9BA8C2))),
+                                onTap: () => setDlg(() => selected = h),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(LanguageSettings.instance.tr('cancel')),
+              ),
+              ElevatedButton(
+                onPressed: selected == null ? null : () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF003B95), foregroundColor: Colors.white),
+                child: Text(LanguageSettings.instance.tr('save')),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    searchCtrl.dispose();
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedHotelId = _parseInt(selected!['id']);
+        _selectedHotelName = '${selected!['name']} – ${selected!['city']}';
+      });
+    }
+  }
+
+  bool _matchesFilter(Map<String, dynamic> r) {
+    if (_filterQuery.isEmpty) return true;
+    final hotel = (r['hotelName'] ?? '').toString().toLowerCase();
+    final user  = (r['userName']  ?? '').toString().toLowerCase();
+    final comment = (r['comment'] ?? '').toString().toLowerCase();
+    return hotel.contains(_filterQuery) ||
+           user.contains(_filterQuery)  ||
+           comment.contains(_filterQuery);
+  }
+
   int _parseInt(dynamic v) {
     if (v is int) return v;
     if (v is num) return v.toInt();
@@ -371,35 +488,63 @@ class _ReviewsPageState extends State<ReviewsPage> {
 
                 // ── Reviews list ────────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Row(
                     children: [
-                      Text(
-                        tr('reviews_traveler_opinions'),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onSurface,
+                      Expanded(
+                        child: Text(
+                          tr('reviews_traveler_opinions'),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       if (!_isLoadingReviews)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFF003B95),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${_reviews.length}',
+                            _filterQuery.isEmpty
+                                ? '${_reviews.length}'
+                                : '${_reviews.where((r) => _matchesFilter(r)).length}',
                             style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700),
+                                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
                           ),
                         ),
                     ],
+                  ),
+                ),
+                // Buscador de reseñas con lupa
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: tr('reviews_search_hint'),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF6B7A99), size: 20),
+                      suffixIcon: _filterQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 18, color: Color(0xFF9BA8C2)),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _filterQuery = '');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    onChanged: (v) => setState(() => _filterQuery = v.toLowerCase()),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -410,11 +555,20 @@ class _ReviewsPageState extends State<ReviewsPage> {
                   )
                 else if (_reviews.isEmpty)
                   _buildEmptyReviews()
-                else
-                  ...(_reviews.map((r) => Padding(
+                else ...[
+                  ...(_reviews.where(_matchesFilter).map((r) => Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                         child: _buildReviewCard(r),
                       ))),
+                  if (_filterQuery.isNotEmpty && !_reviews.any(_matchesFilter))
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Text(tr('reviews_no_results'),
+                            style: TextStyle(color: AppColorScheme.subtitleFor(context))),
+                      ),
+                    ),
+                ],
                 const FooterWidget(),
               ],
             ),
@@ -586,7 +740,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
                 children: [
                   const Divider(height: 1, color: Color(0xFFEAEFF8)),
                   const SizedBox(height: 16),
-                  // Hotel selector
+                  // Hotel selector con buscador
                   if (_hoteles.isNotEmpty) ...[
                     Text(LanguageSettings.instance.tr('reviews_hotel_label'),
                         style: TextStyle(
@@ -594,33 +748,36 @@ class _ReviewsPageState extends State<ReviewsPage> {
                             fontSize: 13,
                             color: Theme.of(context).colorScheme.onSurface)),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedHotelId == 0
-                          ? null
-                          : _selectedHotelId,
-                      hint: Text(LanguageSettings.instance.tr('reviews_select_hotel')),
-                      decoration: InputDecoration(
-                        filled: true,
-                        border: OutlineInputBorder(
+                    GestureDetector(
+                      onTap: () => _showHotelSearch(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
                         ),
-                        isDense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.search, color: const Color(0xFF6B7A99), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _selectedHotelName.isEmpty
+                                    ? LanguageSettings.instance.tr('reviews_select_hotel')
+                                    : _selectedHotelName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: _selectedHotelName.isEmpty
+                                      ? const Color(0xFF9BA8C2)
+                                      : Theme.of(context).colorScheme.onSurface,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(Icons.arrow_drop_down, color: const Color(0xFF9BA8C2)),
+                          ],
+                        ),
                       ),
-                      items: _hoteles
-                          .map((h) => DropdownMenuItem<int>(
-                                value: int.tryParse(h['id'].toString()) ?? 0,
-                                child: Text(
-                                    '${h['name']} – ${h['city']}',
-                                    overflow:
-                                        TextOverflow.ellipsis),
-                              ))
-                          .toList(),
-                      onChanged: (v) =>
-                          setState(() => _selectedHotelId = v ?? 0),
                     ),
                     const SizedBox(height: 16),
                   ],

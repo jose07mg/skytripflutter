@@ -271,15 +271,28 @@ class _EditHotelPageState extends State<EditHotelPage> {
   }
 
   InputDecoration _field(String label, {String? hint, IconData? icon}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: icon != null ? Icon(icon) : null,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      prefixIcon: icon != null
+          ? Icon(icon, color: isDark ? const Color(0xFF8BA0C4) : const Color(0xFF5A6A8A))
+          : null,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: isDark ? const Color(0xFF2D3E5A) : const Color(0xFFDDE4F7)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: isDark ? const Color(0xFF2D3E5A) : const Color(0xFFDDE4F7)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF003B95), width: 2),
+      ),
       filled: true,
-      fillColor: const Color(0xFFF5F7FB),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      fillColor: isDark ? const Color(0xFF1A2333) : const Color(0xFFF5F7FB),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     );
   }
 
@@ -356,24 +369,40 @@ class _EditHotelPageState extends State<EditHotelPage> {
             const SizedBox(height: 12),
             _loadingCiudades
                 ? const Center(child: CircularProgressIndicator())
-                : DropdownButtonFormField<int>(
-                    initialValue: _selectedCiudadId,
-                    decoration: _field('Ciudad / País', icon: Icons.location_city),
-                    isExpanded: true,
-                    items: _ciudades.map((c) {
-                      final id = int.tryParse(c['id_ciudad'].toString()) ?? 0;
-                      return DropdownMenuItem<int>(
-                        value: id,
-                        child: Text(
-                          '${c['nombre']} — ${c['pais_nombre']}',
-                          overflow: TextOverflow.ellipsis,
+                : _ciudades.isEmpty
+                    ? Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.orange.shade200),
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (v) => setState(() => _selectedCiudadId = v),
-                    validator: (_) =>
-                        _selectedCiudadId == null ? 'Selecciona una ciudad' : null,
-                  ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber_outlined, color: Colors.orange.shade700, size: 18),
+                            const SizedBox(width: 8),
+                            const Expanded(child: Text('No se pudieron cargar las ciudades. Verifica la conexión con el servidor.', style: TextStyle(fontSize: 13))),
+                          ],
+                        ),
+                      )
+                    : DropdownButtonFormField<int>(
+                        initialValue: _selectedCiudadId,
+                        decoration: _field('Ciudad / País', icon: Icons.location_city),
+                        isExpanded: true,
+                        items: _ciudades.map((c) {
+                          final id = int.tryParse(c['id_ciudad'].toString()) ?? 0;
+                          return DropdownMenuItem<int>(
+                            value: id,
+                            child: Text(
+                              '${c['nombre']} — ${c['pais_nombre']}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setState(() => _selectedCiudadId = v),
+                        validator: (_) =>
+                            _selectedCiudadId == null ? 'Selecciona una ciudad' : null,
+                      ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -535,12 +564,13 @@ class _EditHotelPageState extends State<EditHotelPage> {
   }
 
   Widget _sectionTitle(String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w800,
-        color: Color(0xFF003B95),
+        color: isDark ? const Color(0xFF6B9FD4) : const Color(0xFF003B95),
         letterSpacing: 1,
       ),
     );
