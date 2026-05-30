@@ -60,8 +60,7 @@ class _MisReservasPageState extends State<MisReservasPage>
         if (!mounted) return;
         setState(() {
           _isLoading = false;
-          _errorMessage =
-              LanguageSettings.instance.tr('reservas_error_load');
+          _errorMessage = LanguageSettings.instance.tr('reservas_error_load');
         });
         return;
       }
@@ -89,8 +88,8 @@ class _MisReservasPageState extends State<MisReservasPage>
       final raw = body is List
           ? body
           : body is Map && body['data'] is List
-              ? body['data'] as List
-              : <dynamic>[];
+          ? body['data'] as List
+          : <dynamic>[];
 
       final ahora = DateTime.now();
       final List<Map<String, dynamic>> activas = [];
@@ -101,9 +100,11 @@ class _MisReservasPageState extends State<MisReservasPage>
         if (item is! Map) continue;
         try {
           final fechaEntrada = DateTime.parse(
-              item['fecha_inicio']?.toString() ?? ahora.toIso8601String());
+            item['fecha_inicio']?.toString() ?? ahora.toIso8601String(),
+          );
           final fechaSalida = DateTime.parse(
-              item['fecha_fin']?.toString() ?? ahora.toIso8601String());
+            item['fecha_fin']?.toString() ?? ahora.toIso8601String(),
+          );
           final estado = item['estado']?.toString() ?? 'confirmada';
 
           final reserva = {
@@ -131,12 +132,21 @@ class _MisReservasPageState extends State<MisReservasPage>
         }
       }
 
-      activas.sort((a, b) => (a['fechaEntrada'] as DateTime)
-          .compareTo(b['fechaEntrada'] as DateTime));
-      historial.sort((a, b) => (b['fechaEntrada'] as DateTime)
-          .compareTo(a['fechaEntrada'] as DateTime));
-      canceladas.sort((a, b) => (b['fechaEntrada'] as DateTime)
-          .compareTo(a['fechaEntrada'] as DateTime));
+      activas.sort(
+        (a, b) => (a['fechaEntrada'] as DateTime).compareTo(
+          b['fechaEntrada'] as DateTime,
+        ),
+      );
+      historial.sort(
+        (a, b) => (b['fechaEntrada'] as DateTime).compareTo(
+          a['fechaEntrada'] as DateTime,
+        ),
+      );
+      canceladas.sort(
+        (a, b) => (b['fechaEntrada'] as DateTime).compareTo(
+          a['fechaEntrada'] as DateTime,
+        ),
+      );
 
       setState(() {
         _reservasActivas = activas;
@@ -148,8 +158,9 @@ class _MisReservasPageState extends State<MisReservasPage>
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage =
-            LanguageSettings.instance.tr('destinos_error_connection');
+        _errorMessage = LanguageSettings.instance.tr(
+          'destinos_error_connection',
+        );
       });
     }
   }
@@ -170,10 +181,11 @@ class _MisReservasPageState extends State<MisReservasPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(tr('reservas_cancel_title'),
-            style: const TextStyle(fontWeight: FontWeight.w700)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          tr('reservas_cancel_title'),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: Text(tr('reservas_cancel_confirm')),
         actions: [
           TextButton(
@@ -209,7 +221,9 @@ class _MisReservasPageState extends State<MisReservasPage>
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(LanguageSettings.instance.tr('reservas_cancelled_ok')),
+            content: Text(
+              LanguageSettings.instance.tr('reservas_cancelled_ok'),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -217,8 +231,9 @@ class _MisReservasPageState extends State<MisReservasPage>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(LanguageSettings.instance.tr('reservas_cancel_error')),
+            content: Text(
+              LanguageSettings.instance.tr('reservas_cancel_error'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -228,7 +243,8 @@ class _MisReservasPageState extends State<MisReservasPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              LanguageSettings.instance.tr('reservas_cancel_conn_error')),
+            LanguageSettings.instance.tr('reservas_cancel_conn_error'),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -255,6 +271,8 @@ class _MisReservasPageState extends State<MisReservasPage>
               controller: _tabController,
               indicatorColor: const Color(0xFFFFB700),
               indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white60,
               labelStyle: const TextStyle(fontWeight: FontWeight.w700),
               tabs: [
                 Tab(
@@ -268,7 +286,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFB700),
                             borderRadius: BorderRadius.circular(20),
@@ -276,9 +296,10 @@ class _MisReservasPageState extends State<MisReservasPage>
                           child: Text(
                             '${_reservasActivas.length}',
                             style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Theme.of(context).colorScheme.onSurface),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
@@ -306,7 +327,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red.shade400,
                             borderRadius: BorderRadius.circular(20),
@@ -314,9 +337,10 @@ class _MisReservasPageState extends State<MisReservasPage>
                           child: Text(
                             '${_reservasCanceladas.length}',
                             style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
@@ -333,7 +357,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                 Container(
                   margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 14),
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF00235B), Color(0xFF0057C8)],
@@ -343,8 +369,7 @@ class _MisReservasPageState extends State<MisReservasPage>
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            const Color(0xFF003B95).withValues(alpha: 0.22),
+                        color: const Color(0xFF003B95).withValues(alpha: 0.22),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
@@ -358,8 +383,11 @@ class _MisReservasPageState extends State<MisReservasPage>
                           color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.euro_outlined,
-                            color: Colors.white, size: 22),
+                        child: const Icon(
+                          Icons.euro_outlined,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -369,7 +397,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                             Text(
                               tr('reservas_total_invested'),
                               style: const TextStyle(
-                                  color: Colors.white70, fontSize: 12),
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                             ),
                             Text(
                               '€${_totalGastado.toStringAsFixed(2)}',
@@ -396,7 +426,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                           Text(
                             tr('reservas_label'),
                             style: const TextStyle(
-                                color: Colors.white70, fontSize: 11),
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -407,16 +439,19 @@ class _MisReservasPageState extends State<MisReservasPage>
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _errorMessage != null
-                        ? _buildError()
-                        : TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildList(_reservasActivas, isActive: true),
-                              _buildList(_historialReservas, isActive: false),
-                              _buildList(_reservasCanceladas,
-                                  isActive: false, isCancelled: true),
-                            ],
+                    ? _buildError()
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildList(_reservasActivas, isActive: true),
+                          _buildList(_historialReservas, isActive: false),
+                          _buildList(
+                            _reservasCanceladas,
+                            isActive: false,
+                            isCancelled: true,
                           ),
+                        ],
+                      ),
               ),
               const FooterWidget(),
             ],
@@ -434,20 +469,26 @@ class _MisReservasPageState extends State<MisReservasPage>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded,
-                size: 64, color: Color(0xFFCDD5E8)),
+            const Icon(
+              Icons.wifi_off_rounded,
+              size: 64,
+              color: Color(0xFFCDD5E8),
+            ),
             const SizedBox(height: 16),
-            Text(_errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Color(0xFF6B7A99), fontSize: 15)),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF6B7A99), fontSize: 15),
+            ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _loadReservas,
               icon: const Icon(Icons.refresh),
               label: Text(tr('retry')),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _blue, foregroundColor: Colors.white),
+                backgroundColor: _blue,
+                foregroundColor: Colors.white,
+              ),
             ),
           ],
         ),
@@ -455,8 +496,11 @@ class _MisReservasPageState extends State<MisReservasPage>
     );
   }
 
-  Widget _buildList(List<Map<String, dynamic>> reservas,
-      {required bool isActive, bool isCancelled = false}) {
+  Widget _buildList(
+    List<Map<String, dynamic>> reservas, {
+    required bool isActive,
+    bool isCancelled = false,
+  }) {
     final tr = LanguageSettings.instance.tr;
     if (reservas.isEmpty) {
       return Center(
@@ -467,17 +511,23 @@ class _MisReservasPageState extends State<MisReservasPage>
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E2A40) : const Color(0xFFF0F4FF),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1E2A40)
+                    : const Color(0xFFF0F4FF),
                 shape: BoxShape.circle,
-                border:
-                    Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D3E5A) : const Color(0xFFDDE4F7), width: 2),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF2D3E5A)
+                      : const Color(0xFFDDE4F7),
+                  width: 2,
+                ),
               ),
               child: Icon(
                 isCancelled
                     ? Icons.cancel_outlined
                     : isActive
-                        ? Icons.calendar_today_outlined
-                        : Icons.history_outlined,
+                    ? Icons.calendar_today_outlined
+                    : Icons.history_outlined,
                 size: 40,
                 color: isCancelled ? Colors.red.shade300 : _blue,
               ),
@@ -487,22 +537,25 @@ class _MisReservasPageState extends State<MisReservasPage>
               isCancelled
                   ? tr('reservas_empty_cancelled')
                   : isActive
-                      ? tr('reservas_empty_active')
-                      : tr('reservas_empty_history'),
+                  ? tr('reservas_empty_active')
+                  : tr('reservas_empty_history'),
               style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface),
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               isCancelled
                   ? tr('reservas_empty_cancelled_sub')
                   : isActive
-                      ? tr('reservas_empty_active_sub')
-                      : tr('reservas_empty_history_sub'),
+                  ? tr('reservas_empty_active_sub')
+                  : tr('reservas_empty_history_sub'),
               style: TextStyle(
-                  fontSize: 13, color: AppColorScheme.subtitleFor(context)),
+                fontSize: 13,
+                color: AppColorScheme.subtitleFor(context),
+              ),
             ),
           ],
         ),
@@ -518,14 +571,16 @@ class _MisReservasPageState extends State<MisReservasPage>
     );
   }
 
-  Widget _buildCard(Map<String, dynamic> r,
-      {required bool isActive, bool isCancelled = false}) {
+  Widget _buildCard(
+    Map<String, dynamic> r, {
+    required bool isActive,
+    bool isCancelled = false,
+  }) {
     final tr = LanguageSettings.instance.tr;
     final fechaEntrada = r['fechaEntrada'] as DateTime;
     final fechaSalida = r['fechaSalida'] as DateTime;
     final noches = fechaSalida.difference(fechaEntrada).inDays;
-    final diasRestantes =
-        fechaEntrada.difference(DateTime.now()).inDays;
+    final diasRestantes = fechaEntrada.difference(DateTime.now()).inDays;
 
     return Container(
       decoration: BoxDecoration(
@@ -534,10 +589,7 @@ class _MisReservasPageState extends State<MisReservasPage>
         border: Border.all(
           color: isActive
               ? const Color(0xFFB8CEFF)
-              : Theme.of(context)
-                  .colorScheme
-                  .outline
-                  .withValues(alpha: 0.3),
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
@@ -552,14 +604,16 @@ class _MisReservasPageState extends State<MisReservasPage>
         children: [
           // Header strip
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: isActive
-                  ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E2A40) : const Color(0xFFEBF2FF))
+                  ? (Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1E2A40)
+                        : const Color(0xFFEBF2FF))
                   : const Color(0xFFF5F5F5),
               borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(15)),
+                top: Radius.circular(15),
+              ),
             ),
             child: Row(
               children: [
@@ -585,7 +639,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                 if (isActive && diasRestantes >= 0)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: diasRestantes <= 3
                           ? const Color(0xFFFFEBEE)
@@ -596,9 +652,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                       diasRestantes == 0
                           ? tr('reservas_today')
                           : (diasRestantes == 1
-                              ? tr('reservas_in_days_s')
-                              : tr('reservas_in_days_p'))
-                              .replaceAll('{n}', '$diasRestantes'),
+                                    ? tr('reservas_in_days_s')
+                                    : tr('reservas_in_days_p'))
+                                .replaceAll('{n}', '$diasRestantes'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -631,16 +687,20 @@ class _MisReservasPageState extends State<MisReservasPage>
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 14, color: _accent),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: _accent,
+                    ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         '${r['ciudad']}, ${r['pais']}',
                         style: const TextStyle(
-                            fontSize: 13,
-                            color: _accent,
-                            fontWeight: FontWeight.w500),
+                          fontSize: 13,
+                          color: _accent,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -661,9 +721,10 @@ class _MisReservasPageState extends State<MisReservasPage>
                       ),
                     ),
                     Container(
-                        width: 1,
-                        height: 36,
-                        color: const Color(0xFFE0E7F0)),
+                      width: 1,
+                      height: 36,
+                      color: const Color(0xFFE0E7F0),
+                    ),
                     Expanded(
                       child: _InfoItem(
                         icon: Icons.logout_outlined,
@@ -673,14 +734,16 @@ class _MisReservasPageState extends State<MisReservasPage>
                       ),
                     ),
                     Container(
-                        width: 1,
-                        height: 36,
-                        color: const Color(0xFFE0E7F0)),
+                      width: 1,
+                      height: 36,
+                      color: const Color(0xFFE0E7F0),
+                    ),
                     Expanded(
                       child: _InfoItem(
                         icon: Icons.nights_stay_outlined,
                         label: tr('reservas_duration'),
-                        value: '$noches ${noches == 1 ? tr('reservas_night_s') : tr('reservas_night_p')}',
+                        value:
+                            '$noches ${noches == 1 ? tr('reservas_night_s') : tr('reservas_night_p')}',
                         center: true,
                       ),
                     ),
@@ -698,8 +761,7 @@ class _MisReservasPageState extends State<MisReservasPage>
                       Icons.people_outline,
                       '${r['numeroPersonas']} ${(r['numeroPersonas'] as int) == 1 ? tr('reservas_person_s') : tr('reservas_person_p')}',
                     ),
-                    _Tag(Icons.hotel_outlined,
-                        r['habitacionTipo'] as String),
+                    _Tag(Icons.hotel_outlined, r['habitacionTipo'] as String),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -721,7 +783,9 @@ class _MisReservasPageState extends State<MisReservasPage>
                           Text(
                             tr('reservas_total_price'),
                             style: TextStyle(
-                                fontSize: 11, color: AppColorScheme.subtitleFor(context)),
+                              fontSize: 11,
+                              color: AppColorScheme.subtitleFor(context),
+                            ),
                           ),
                         ],
                       ),
@@ -736,7 +800,8 @@ class _MisReservasPageState extends State<MisReservasPage>
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                   ],
@@ -754,11 +819,12 @@ class _MisReservasPageState extends State<MisReservasPage>
 }
 
 class _InfoItem extends StatelessWidget {
-  const _InfoItem(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      this.center = false});
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.center = false,
+  });
   final IconData icon;
   final String label;
   final String value;
@@ -767,26 +833,35 @@ class _InfoItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment:
-          center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: center
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment:
-              center ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisAlignment: center
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
           children: [
             Icon(icon, size: 13, color: AppColorScheme.subtitleFor(context)),
             const SizedBox(width: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 11, color: AppColorScheme.subtitleFor(context))),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColorScheme.subtitleFor(context),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 3),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       ],
     );
   }
@@ -802,20 +877,29 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E2A40) : const Color(0xFFF0F4FF),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E2A40)
+            : const Color(0xFFF0F4FF),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D3E5A) : const Color(0xFFDDE4F7)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF2D3E5A)
+              : const Color(0xFFDDE4F7),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 13, color: AppColorScheme.accentFor(context)),
           const SizedBox(width: 5),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: AppColorScheme.subtitleFor(context),
-                  fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColorScheme.subtitleFor(context),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
