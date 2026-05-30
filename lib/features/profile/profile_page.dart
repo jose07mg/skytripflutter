@@ -30,6 +30,11 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSaving = false;
   bool _editMode = false;
 
+  String? _orNull(String v) {
+    final s = v.trim();
+    return s.isEmpty ? null : s;
+  }
+
   String get _initials {
     final name = _usuarioController.text.trim();
     if (name.isEmpty) return '?';
@@ -101,9 +106,9 @@ class _ProfilePageState extends State<ProfilePage> {
         body: jsonEncode({
           'usuario': _usuarioController.text.trim(),
           'email': _emailController.text.trim(),
-          'direccion': _direccionController.text.trim(),
-          'pais_nacimiento': _paisNacimientoController.text.trim(),
-          'fecha_nacimiento': _fechaNacimientoController.text.trim(),
+          'direccion': _orNull(_direccionController.text),
+          'pais_nacimiento': _orNull(_paisNacimientoController.text),
+          'fecha_nacimiento': _orNull(_fechaNacimientoController.text),
         }),
       );
       if (!mounted) return;

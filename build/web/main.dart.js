@@ -123739,8 +123739,8 @@ case 6:if(n.c!=null)n.F(new A.aMj(n))
 case 1:return A.v(q,r)
 case 2:return A.u(o.at(-1),r)}})
 return A.w($async$Ea,r)},
-EL(){var s=0,r=A.x(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h,g,f,e,d
-var $async$EL=A.y(function(a,b){if(a===1){o.push(b)
+EL(){var s=0,r=A.x(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1
+var $async$EL=A.y(function(a2,a3){if(a2===1){o.push(a3)
 s=p}for(;;)switch(s){case 0:if(!m.d.gX().kW()){s=1
 break}m.F(new A.aMk(m))
 l=$.cp().a
@@ -123751,9 +123751,16 @@ p=4
 h=A.bu("https://skytriproyecto-production.up.railway.app/user/update",0,null)
 g=t.N
 f=A.a3(["Content-Type","application/json","Authorization","Bearer "+l],g,g)
+e=B.c.bK(m.e.a.a)
+d=B.c.bK(m.f.a.a)
+c=B.c.bK(m.r.a.a)
+b=c.length===0?null:c
+c=B.c.bK(m.w.a.a)
+a=c.length===0?null:c
+c=B.c.bK(m.x.a.a)
 s=7
-return A.p(A.fV(h,B.Q.h1(A.a3(["usuario",B.c.bK(m.e.a.a),"email",B.c.bK(m.f.a.a),"direccion",B.c.bK(m.r.a.a),"pais_nacimiento",B.c.bK(m.w.a.a),"fecha_nacimiento",B.c.bK(m.x.a.a)],g,g),null),f),$async$EL)
-case 7:i=b
+return A.p(A.fV(h,B.Q.h1(A.a3(["usuario",e,"email",d,"direccion",b,"pais_nacimiento",a,"fecha_nacimiento",c.length===0?null:c],g,t.ob),null),f),$async$EL)
+case 7:i=a3
 if(m.c==null){n=[1]
 s=5
 break}if(i.b===200){m.F(new A.aMl(m))
@@ -123762,7 +123769,7 @@ n.push(6)
 s=5
 break
 case 4:p=3
-d=o.pop()
+a1=o.pop()
 if(m.c==null){n=[1]
 s=5
 break}k.bE(A.bm(null,null,null,null,null,B.n,null,A.f(j.$1("profile_connection_error"),null,null,null,null,null,null,null,null),null,B.I,null,null,null,null,null,null,null,null,null,null))
