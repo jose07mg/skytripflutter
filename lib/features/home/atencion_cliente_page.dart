@@ -68,10 +68,9 @@ class _AtencionClientePageState extends State<AtencionClientePage> {
     if (mounted) {
       setState(() {
         _canales = [
-          {'tipo': 'chat',      'etiqueta': 'Chat en vivo',          'valor': 'https://skytrip.com/chat'},
-          {'tipo': 'telefono',  'etiqueta': 'Teléfono',              'valor': 'tel:+34900123456'},
-          {'tipo': 'email',     'etiqueta': 'Correo electrónico',    'valor': 'mailto:support@skytrip.com'},
-          {'tipo': 'whatsapp',  'etiqueta': 'WhatsApp',              'valor': 'https://wa.me/34600123456'},
+          {'tipo': 'whatsapp',  'etiqueta': 'WhatsApp',              'valor': 'https://wa.me/34600000000'},
+          {'tipo': 'email',     'etiqueta': 'Correo electrónico',    'valor': 'mailto:soporte@skytrip.com'},
+          {'tipo': 'telefono',  'etiqueta': 'Teléfono',              'valor': 'tel:+34900000000'},
         ];
       });
     }
@@ -113,13 +112,20 @@ class _AtencionClientePageState extends State<AtencionClientePage> {
   }
 
   Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
     try {
+      Uri uri;
+      // Email: preferir Gmail web compose
+      if (url.startsWith('mailto:')) {
+        final email = Uri.encodeComponent(url.replaceFirst('mailto:', '').split('?').first.trim());
+        uri = Uri.parse('https://mail.google.com/mail/?view=cm&fs=1&to=$email');
+      } else {
+        uri = Uri.parse(url);
+      }
       if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (_) {
-      // Ignore launch errors
+      // Ignorar errores de lanzamiento
     }
   }
 

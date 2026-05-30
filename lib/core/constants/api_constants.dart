@@ -10,6 +10,10 @@ class ApiConstants {
   // Si usas XAMPP, el puerto por defecto es el 80.
   // Si usas el DOCKER del proyecto, cambia a 'http://localhost:9000/skytrip_api/public'.
   static String get baseUrl {
+    // En debug local apunta al XAMPP para pruebas
+    if (kDebugMode) {
+      return 'http://localhost/RMSmira_api/public';
+    }
     return 'https://skytriproyecto-production.up.railway.app';
   }
 

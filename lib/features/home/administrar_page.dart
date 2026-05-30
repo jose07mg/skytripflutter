@@ -29,7 +29,7 @@ class _AdministrarPageState extends State<AdministrarPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this);
+    _tabController = TabController(length: 9, vsync: this);
     _tabController.addListener(() => setState(() {}));
     _reload();
   }
@@ -253,6 +253,7 @@ class _AdministrarPageState extends State<AdministrarPage>
             Tab(icon: Icon(Icons.filter_list), text: 'Filtros'),
             Tab(icon: Icon(Icons.star_outline), text: 'Reseñas'),
             Tab(icon: Icon(Icons.contact_phone_outlined), text: 'Contacto'),
+            Tab(icon: Icon(Icons.inbox_outlined), text: 'Mensajes'),
             Tab(icon: Icon(Icons.view_carousel_outlined), text: 'Carruseles'),
             Tab(icon: Icon(Icons.public_outlined), text: 'Destinos'),
           ],
@@ -267,6 +268,7 @@ class _AdministrarPageState extends State<AdministrarPage>
           const _FiltrosTab(),
           const _ResenasTab(),
           const _ContactoAdminTab(),
+          const _MensajesAdminTab(),
           const _CarruselAdminTab(),
           const _DestinosTab(),
         ],
@@ -1968,6 +1970,253 @@ class _ContactoAdminTabState extends State<_ContactoAdminTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Mensajes Admin Tab ────────────────────────────────────────────────────
+
+class _MensajesAdminTab extends StatefulWidget {
+  const _MensajesAdminTab();
+
+  @override
+  State<_MensajesAdminTab> createState() => _MensajesAdminTabState();
+}
+
+class _MensajesAdminTabState extends State<_MensajesAdminTab> {
+  late Future<List<dynamic>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    final token = AuthService().token;
+    _future = http
+        .get(
+          Uri.parse('${ApiConstants.baseUrl}/contacto/mensajes'),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 10))
+        .then((r) {
+          final body = jsonDecode(r.body);
+          if (body is List) return body;
+          if (body is Map && body['data'] is List) return body['data'] as List;
+          return <dynamic>[];
+        });
+  }
+
+  Future<void> _marcarLeido(int id) async {
+    try {
+      final token = AuthService().token;
+      await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/contacto/mensaje/leido'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'id_mensaje': id}),
+      ).timeout(const Duration(seconds: 10));
+      if (mounted) setState(_reload);
+    } catch (_) {}
+  }
+
+  Future<void> _delete(int id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar mensaje'),
+        content: const Text('¿Seguro que quieres eliminar este mensaje?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    try {
+      final token = AuthService().token;
+      final r = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/contacto/mensaje?id_mensaje=$id'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mensaje eliminado')),
+        );
+        setState(_reload);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _verDetalle(Map<String, dynamic> msg) {
+    final id = int.tryParse(msg['id_mensaje'].toString()) ?? 0;
+    if (msg['leido'] != true) _marcarLeido(id);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(msg['asunto']?.toString() ?? 'Sin asunto',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _detailRow(Icons.person_outline, msg['nombre']?.toString() ?? ''),
+              _detailRow(Icons.email_outlined, msg['email']?.toString() ?? ''),
+              _detailRow(Icons.access_time, msg['fecha']?.toString() ?? ''),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(msg['mensaje']?.toString() ?? '',
+                  style: const TextStyle(fontSize: 14, height: 1.6)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar')),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF6B7A99)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey),
+                const SizedBox(height: 12),
+                Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => setState(_reload),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
+        final mensajes = snapshot.data ?? [];
+        if (mensajes.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.inbox_outlined, size: 56, color: Color(0xFFCDD5E8)),
+                SizedBox(height: 12),
+                Text('No hay mensajes',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6B7A99))),
+              ],
+            ),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () async => setState(_reload),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: mensajes.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (_, i) {
+              final m = mensajes[i] as Map<String, dynamic>;
+              final leido = m['leido'] == true;
+              final id = int.tryParse(m['id_mensaje'].toString()) ?? 0;
+              return Card(
+                color: leido ? null : const Color(0xFFEEF3FF),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: leido
+                        ? const Color(0xFFE8ECF4)
+                        : const Color(0xFF003B95),
+                    child: Icon(
+                      leido ? Icons.drafts_outlined : Icons.mail_outlined,
+                      color: leido ? const Color(0xFF6B7A99) : Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    m['asunto']?.toString() ?? 'Sin asunto',
+                    style: TextStyle(
+                      fontWeight: leido ? FontWeight.w500 : FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${m['nombre'] ?? ''} · ${m['email'] ?? ''}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF9BA8C2)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        m['mensaje']?.toString() ?? '',
+                        style: const TextStyle(fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  isThreeLine: true,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: 'Eliminar mensaje',
+                    onPressed: () => _delete(id),
+                  ),
+                  onTap: () => _verDetalle(m),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
