@@ -254,7 +254,23 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   double _parseDouble(dynamic v) {
     if (v is num) return v.toDouble();
-    return double.tryParse(v?.toString() ?? '') ?? 0;
+    return double.tryParse(v?.toString().replaceAll(',', '.') ?? '') ?? 0;
+  }
+
+  List<String> _parseServices(dynamic value) {
+    if (value is List) {
+      return value
+          .map((service) => service.toString().trim())
+          .where((service) => service.isNotEmpty)
+          .toList();
+    }
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty) return const [];
+    return text
+        .split(',')
+        .map((service) => service.trim())
+        .where((service) => service.isNotEmpty)
+        .toList();
   }
 
   bool _habitacionPuedeAcomodar(Map<String, dynamic> h) =>
@@ -338,9 +354,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
     final imageUrl = ApiConstants.normalizeImageUrl(
       _hotelData['image'] ?? _hotelData['imagen'],
     );
-    final services = (_hotelData['servicios'] as List<dynamic>? ?? const [])
-        .map((s) => s.toString())
-        .toList();
+    final services = _parseServices(_hotelData['servicios']);
     final hotelName =
         _hotelData['hotelName']?.toString() ??
         _hotelData['nombre']?.toString() ??
@@ -355,7 +369,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
           _hotelData['pais_nombre']?.toString() ??
           '',
     );
-    final stars = (_hotelData['estrellas'] as num?)?.toInt() ?? 0;
+    final stars = _parseInt(_hotelData['estrellas']);
     final rating = _parseDouble(
       _hotelData['rating'] ?? _hotelData['puntuacion'],
     );
@@ -1143,16 +1157,21 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   String _roomImageUrl(String tipo) {
     final t = tipo.toLowerCase();
-    if (t.contains('suite'))
+    if (t.contains('suite')) {
       return 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1400&q=90&fit=crop';
-    if (t.contains('deluxe'))
+    }
+    if (t.contains('deluxe')) {
       return 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1400&q=90&fit=crop';
-    if (t.contains('familiar') || t.contains('family'))
+    }
+    if (t.contains('familiar') || t.contains('family')) {
       return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1400&q=90&fit=crop';
-    if (t.contains('doble') || t.contains('double'))
+    }
+    if (t.contains('doble') || t.contains('double')) {
       return 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1400&q=90&fit=crop';
-    if (t.contains('individual') || t.contains('single'))
+    }
+    if (t.contains('individual') || t.contains('single')) {
       return 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1400&q=90&fit=crop';
+    }
     return 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=1400&q=90&fit=crop';
   }
 
