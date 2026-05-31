@@ -285,8 +285,12 @@ class _TripDetailPageState extends State<TripDetailPage> {
         .map((s) => s.toString())
         .toList();
     final hotelName = widget.trip['hotelName']?.toString() ?? 'Hotel';
-    final city = LanguageSettings.instance.trCity(widget.trip['city']?.toString() ?? '');
-    final country = LanguageSettings.instance.trCountry(widget.trip['country']?.toString() ?? '');
+    final city = LanguageSettings.instance.trCity(
+      widget.trip['city']?.toString() ?? '',
+    );
+    final country = LanguageSettings.instance.trCountry(
+      widget.trip['country']?.toString() ?? '',
+    );
     final stars = (widget.trip['estrellas'] as num?)?.toInt() ?? 0;
     final rating = _parseDouble(widget.trip['rating']);
     final tr = LanguageSettings.instance.tr;
@@ -385,7 +389,11 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         builder: (_) => EditHotelPage(hotel: widget.trip),
                       ),
                     );
-                    if (updated == true && mounted) setState(() {});
+                    if (updated == true && mounted) {
+                      _loadHabitaciones();
+                      _loadResenas();
+                      setState(() {});
+                    }
                   },
                 ),
               IconButton(
@@ -526,7 +534,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
-                                              color: AppColorScheme.titleFor(context),
+                                              color: AppColorScheme.titleFor(
+                                                context,
+                                              ),
                                             ),
                                           ),
                                           Text(
@@ -581,7 +591,12 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                   final price = _parseDouble(
                                     widget.trip['price'],
                                   );
-                                  final nights = widget.fechaSeleccionada?.duration.inDays ?? 1;
+                                  final nights =
+                                      widget
+                                          .fechaSeleccionada
+                                          ?.duration
+                                          .inDays ??
+                                      1;
                                   final total = price * nights;
                                   final cs = CurrencySettings.instance;
                                   return Column(
@@ -592,12 +607,17 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                         style: TextStyle(
                                           fontSize: 26,
                                           fontWeight: FontWeight.w900,
-                                          color: Theme.of(ctx).colorScheme.onSurface,
+                                          color: Theme.of(
+                                            ctx,
+                                          ).colorScheme.onSurface,
                                         ),
                                       ),
                                       Text(
                                         tr('trip_per_night'),
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B7A99)),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF6B7A99),
+                                        ),
                                       ),
                                       if (nights > 1)
                                         Text(
@@ -605,7 +625,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
-                                            color: AppColorScheme.accentFor(context),
+                                            color: AppColorScheme.accentFor(
+                                              context,
+                                            ),
                                           ),
                                         ),
                                     ],
@@ -648,13 +670,19 @@ class _TripDetailPageState extends State<TripDetailPage> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(icon, size: 16, color: AppColorScheme.accentFor(context)),
+                              Icon(
+                                icon,
+                                size: 16,
+                                color: AppColorScheme.accentFor(context),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 LanguageSettings.instance.trService(s),
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Theme.of(context).brightness == Brightness.dark
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
                                       ? const Color(0xFFB0BEC5)
                                       : const Color(0xFF3D4A6B),
                                   fontWeight: FontWeight.w500,
@@ -730,7 +758,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
                               : const Color(0xFFEBF2FF),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? const Color(0xFF2D4A30)
                                 : const Color(0xFFB8CEFF),
                           ),
@@ -1078,8 +1107,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
   /// Devuelve una URL de Unsplash según el tipo de habitación
   String _roomImageUrl(String tipo) {
     final t = tipo.toLowerCase();
-    if (t.contains('suite'))     return 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1400&q=90&fit=crop';
-    if (t.contains('deluxe'))    return 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1400&q=90&fit=crop';
+    if (t.contains('suite'))
+      return 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1400&q=90&fit=crop';
+    if (t.contains('deluxe'))
+      return 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1400&q=90&fit=crop';
     if (t.contains('familiar') || t.contains('family')) {
       return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1400&q=90&fit=crop';
     }
@@ -1095,19 +1126,19 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   Widget _buildRoomCard(Map<String, dynamic> h) {
     final tr = LanguageSettings.instance.tr;
-    final recommended   = h == _habitacionRecomendada;
+    final recommended = h == _habitacionRecomendada;
     final canAccommodate = _habitacionPuedeAcomodar(h);
-    final cap           = _parseInt(h['capacidad']);
+    final cap = _parseInt(h['capacidad']);
     final pricePerNight = _parseDouble(h['precio_noche']);
-    final tipo          = h['tipo_habitacion']?.toString() ?? tr('trip_room_default');
-    final descripcion   = h['descripcion']?.toString() ?? '';
-    final roomImg       = _roomImageUrl(tipo);
+    final tipo = h['tipo_habitacion']?.toString() ?? tr('trip_room_default');
+    final descripcion = h['descripcion']?.toString() ?? '';
+    final roomImg = _roomImageUrl(tipo);
 
     final borderColor = recommended
         ? const Color(0xFF22C55E)
         : canAccommodate
-            ? const Color(0xFFDDE4F7)
-            : const Color(0xFFFFCDD2);
+        ? const Color(0xFFDDE4F7)
+        : const Color(0xFFFFCDD2);
 
     // ── shared sub-widgets ──────────────────────────────────────────────
     Widget imagePanel() => Stack(
@@ -1135,7 +1166,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
           ),
         ),
         Positioned(
-          left: 0, right: 0, bottom: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           child: Container(
             height: 80,
             decoration: const BoxDecoration(
@@ -1148,7 +1181,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
           ),
         ),
         Positioned(
-          left: 14, bottom: 12,
+          left: 14,
+          bottom: 12,
           child: Text(
             LanguageSettings.instance.trService(tipo),
             style: const TextStyle(
@@ -1161,7 +1195,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
         ),
         if (recommended)
           Positioned(
-            top: 12, right: 12,
+            top: 12,
+            right: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -1171,12 +1206,18 @@ class _TripDetailPageState extends State<TripDetailPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.thumb_up_alt_rounded, color: Colors.white, size: 13),
+                  const Icon(
+                    Icons.thumb_up_alt_rounded,
+                    color: Colors.white,
+                    size: 13,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     tr('trip_room_recommended'),
                     style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -1185,7 +1226,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
           )
         else if (!canAccommodate)
           Positioned(
-            top: 12, right: 12,
+            top: 12,
+            right: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -1195,7 +1237,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
               child: Text(
                 tr('trip_room_insuf_cap'),
                 style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 10,
                 ),
               ),
             ),
@@ -1222,7 +1266,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: canAccommodate ? const Color(0xFF16A34A) : Colors.red,
+                    color: canAccommodate
+                        ? const Color(0xFF16A34A)
+                        : Colors.red,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1233,7 +1279,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                   child: Text(
                     '(${tr('trip_you_need')} ${widget.huespedes.length})',
                     style: const TextStyle(
-                      fontSize: 12, color: Colors.red, fontStyle: FontStyle.italic,
+                      fontSize: 12,
+                      color: Colors.red,
+                      fontStyle: FontStyle.italic,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1247,7 +1295,11 @@ class _TripDetailPageState extends State<TripDetailPage> {
               descripcion,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7A99), height: 1.5),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF6B7A99),
+                height: 1.5,
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -1256,9 +1308,13 @@ class _TripDetailPageState extends State<TripDetailPage> {
             runSpacing: 6,
             children: [
               _RoomChip(Icons.wifi, tr('trip_room_wifi')),
-              _RoomChip(Icons.free_breakfast_outlined, tr('trip_room_breakfast')),
+              _RoomChip(
+                Icons.free_breakfast_outlined,
+                tr('trip_room_breakfast'),
+              ),
               _RoomChip(Icons.air_outlined, tr('trip_room_ac')),
-              if (tipo.toLowerCase().contains('suite') || tipo.toLowerCase().contains('deluxe'))
+              if (tipo.toLowerCase().contains('suite') ||
+                  tipo.toLowerCase().contains('deluxe'))
                 _RoomChip(Icons.hot_tub_outlined, tr('trip_room_jacuzzi')),
             ],
           ),
@@ -1272,9 +1328,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 child: ValueListenableBuilder<String>(
                   valueListenable: CurrencySettings.instance.currency,
                   builder: (ctx, _, _) {
-                    final nights = widget.fechaSeleccionada?.duration.inDays ?? 1;
-                    final total  = pricePerNight * nights;
-                    final cs     = CurrencySettings.instance;
+                    final nights =
+                        widget.fechaSeleccionada?.duration.inDays ?? 1;
+                    final total = pricePerNight * nights;
+                    final cs = CurrencySettings.instance;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1282,7 +1339,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: '${cs.getConvertedPrice(pricePerNight)}${cs.getSymbol()}',
+                                text:
+                                    '${cs.getConvertedPrice(pricePerNight)}${cs.getSymbol()}',
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
@@ -1320,17 +1378,26 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 child: ElevatedButton(
                   onPressed: canAccommodate ? () => _onReservar(h) : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: recommended ? const Color(0xFF16A34A) : _blue,
+                    backgroundColor: recommended
+                        ? const Color(0xFF16A34A)
+                        : _blue,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: const Color(0xFFE0E4EF),
                     disabledForegroundColor: const Color(0xFF9BA8C2),
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 22),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text(
-                    canAccommodate ? tr('trip_room_book') : tr('trip_room_unavailable'),
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    canAccommodate
+                        ? tr('trip_room_book')
+                        : tr('trip_room_unavailable'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
@@ -1378,46 +1445,68 @@ class _TripDetailPageState extends State<TripDetailPage> {
                               errorBuilder: (_, _, _) => Container(
                                 decoration: const BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [Color(0xFF003B95), Color(0xFF0071C2)],
+                                    colors: [
+                                      Color(0xFF003B95),
+                                      Color(0xFF0071C2),
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                 ),
                                 child: const Center(
-                                  child: Icon(Icons.king_bed, size: 52, color: Colors.white30),
+                                  child: Icon(
+                                    Icons.king_bed,
+                                    size: 52,
+                                    color: Colors.white30,
+                                  ),
                                 ),
                               ),
                             ),
                             Positioned(
-                              left: 0, right: 0, bottom: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
                               child: Container(
                                 height: 80,
                                 decoration: const BoxDecoration(
                                   gradient: LinearGradient(
                                     begin: Alignment.bottomCenter,
                                     end: Alignment.topCenter,
-                                    colors: [Color(0xDD000000), Colors.transparent],
+                                    colors: [
+                                      Color(0xDD000000),
+                                      Colors.transparent,
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
                             Positioned(
-                              left: 14, bottom: 12,
+                              left: 14,
+                              bottom: 12,
                               child: Text(
                                 LanguageSettings.instance.trService(tipo),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  shadows: [Shadow(blurRadius: 6, color: Colors.black87)],
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: 6,
+                                      color: Colors.black87,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                             if (recommended)
                               Positioned(
-                                top: 12, right: 12,
+                                top: 12,
+                                right: 12,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF22C55E),
                                     borderRadius: BorderRadius.circular(20),
@@ -1425,12 +1514,18 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.thumb_up_alt_rounded, color: Colors.white, size: 13),
+                                      const Icon(
+                                        Icons.thumb_up_alt_rounded,
+                                        color: Colors.white,
+                                        size: 13,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         tr('trip_room_recommended'),
                                         style: const TextStyle(
-                                          color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11,
                                         ),
                                       ),
                                     ],
@@ -1439,9 +1534,13 @@ class _TripDetailPageState extends State<TripDetailPage> {
                               )
                             else if (!canAccommodate)
                               Positioned(
-                                top: 12, right: 12,
+                                top: 12,
+                                right: 12,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.red.shade600,
                                     borderRadius: BorderRadius.circular(20),
@@ -1449,7 +1548,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                   child: Text(
                                     tr('trip_room_insuf_cap'),
                                     style: const TextStyle(
-                                      color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ),
@@ -1469,10 +1570,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
               // ── Móvil: imagen arriba, info abajo ────────────────────
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    imagePanel(),
-                    infoPanel(),
-                  ],
+                  children: [imagePanel(), infoPanel()],
                 ),
         );
       },
