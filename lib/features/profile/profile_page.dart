@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -26,17 +26,18 @@ class _ProfilePageState extends State<ProfilePage> {
   final _direccionController = TextEditingController();
   final _paisNacimientoController = TextEditingController();
   final _fechaNacimientoController = TextEditingController();
+
   bool _isLoading = true;
   bool _isSaving = false;
   bool _editMode = false;
+  String? _loadError;
+
   int? _reservasCount;
   int? _favoritosCount;
   int? _reviewsCount;
 
-  String? _orNull(String v) {
-    final s = v.trim();
-    return s.isEmpty ? null : s;
-  }
+  // Valores originales guardados al entrar en modo edición
+  Map<String, String> _snapshot = {};
 
   String get _initials {
     final name = _usuarioController.text.trim();
@@ -64,26 +65,51 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
+  // ── Guardar snapshot y entrar en modo edición ──────────────
+  void _enterEditMode() {
+    _snapshot = {
+      'usuario': _usuarioController.text,
+      'email': _emailController.text,
+      'direccion': _direccionController.text,
+      'paisNacimiento': _paisNacimientoController.text,
+      'fechaNacimiento': _fechaNacimientoController.text,
+    };
+    setState(() => _editMode = true);
+  }
+
+  // ── Cancelar edición y restaurar valores originales ────────
+  void _cancelEditMode() {
+    _usuarioController.text = _snapshot['usuario'] ?? '';
+    _emailController.text = _snapshot['email'] ?? '';
+    _direccionController.text = _snapshot['direccion'] ?? '';
+    _paisNacimientoController.text = _snapshot['paisNacimiento'] ?? '';
+    _fechaNacimientoController.text = _snapshot['fechaNacimiento'] ?? '';
+    setState(() => _editMode = false);
+  }
+
+  // ── Cargar perfil y estadísticas ──────────────────────────
   Future<void> _loadProfile() async {
+    if (!mounted) return;
+    setState(() { _isLoading = true; _loadError = null; });
+
     final token = AuthService().token;
-    final userId = AuthService().userId;
     if (token == null) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _loadError = 'No autenticado'; });
       return;
     }
+
     final authHeaders = {'Authorization': 'Bearer $token'};
     try {
-      // All 4 calls in parallel — reviews filtered by userId from AuthService
-      final futures = <Future<http.Response>>[
+      final results = await Future.wait([
         http.get(Uri.parse('${ApiConstants.baseUrl}/me'), headers: authHeaders),
         http.get(Uri.parse('${ApiConstants.baseUrl}/reservas'), headers: authHeaders),
         http.get(Uri.parse('${ApiConstants.baseUrl}/favoritos'), headers: authHeaders),
-        if (userId != null)
-          http.get(Uri.parse('${ApiConstants.baseUrl}/reviews?id_usuario=$userId')),
-      ];
-      final results = await Future.wait(futures);
+        http.get(Uri.parse('${ApiConstants.baseUrl}/reviews/mine'), headers: authHeaders),
+      ]).timeout(const Duration(seconds: 20));
 
-      // Profile data
+      if (!mounted) return;
+
+      // Perfil
       if (results[0].statusCode == 200) {
         final data = jsonDecode(results[0].body);
         if (data is Map) {
@@ -95,7 +121,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
 
-      // Reservas (solo del usuario autenticado — filtrado por JWT en el servidor)
+      // Reservas
       if (results[1].statusCode == 200) {
         final list = jsonDecode(results[1].body);
         _reservasCount = list is List
@@ -105,28 +131,44 @@ class _ProfilePageState extends State<ProfilePage> {
                 : 0);
       }
 
-      // Favoritos (solo del usuario autenticado — filtrado por JWT en el servidor)
+      // Favoritos
       if (results[2].statusCode == 200) {
         final list = jsonDecode(results[2].body);
         _favoritosCount = list is List ? list.length : 0;
       }
 
-      // Reseñas del usuario (filtradas por id_usuario en el servidor)
-      if (userId != null && results.length == 4 && results[3].statusCode == 200) {
+      // Reseñas (endpoint autenticado /reviews/mine)
+      if (results[3].statusCode == 200) {
         final list = jsonDecode(results[3].body);
         _reviewsCount = list is List ? list.length : 0;
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) _loadError = LanguageSettings.instance.tr('reservas_cancel_conn_error');
+    }
+
     if (mounted) setState(() => _isLoading = false);
   }
 
+  // ── Guardar cambios ────────────────────────────────────────
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSaving = true);
+
+    // Bug fix: comprobar token ANTES de activar el spinner
     final token = AuthService().token;
-    if (token == null) return;
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(LanguageSettings.instance.tr('profile_connection_error')),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
     final messenger = ScaffoldMessenger.of(context);
     final tr = LanguageSettings.instance.tr;
+
     try {
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/user/update'),
@@ -137,14 +179,24 @@ class _ProfilePageState extends State<ProfilePage> {
         body: jsonEncode({
           'usuario': _usuarioController.text.trim(),
           'email': _emailController.text.trim(),
-          'direccion': _orNull(_direccionController.text),
-          'pais_nacimiento': _orNull(_paisNacimientoController.text),
-          'fecha_nacimiento': _orNull(_fechaNacimientoController.text),
+          'direccion': _direccionController.text.trim(),
+          'pais_nacimiento': _paisNacimientoController.text.trim(),
+          'fecha_nacimiento': _fechaNacimientoController.text.trim(),
         }),
-      );
+      ).timeout(const Duration(seconds: 15));
+
       if (!mounted) return;
+
       if (response.statusCode == 200) {
         setState(() => _editMode = false);
+        // Actualizar snapshot con los nuevos valores guardados
+        _snapshot = {
+          'usuario': _usuarioController.text,
+          'email': _emailController.text,
+          'direccion': _direccionController.text,
+          'paisNacimiento': _paisNacimientoController.text,
+          'fechaNacimiento': _fechaNacimientoController.text,
+        };
         messenger.showSnackBar(SnackBar(
           content: Row(children: [
             const Icon(Icons.check_circle_outline, color: Colors.white),
@@ -153,8 +205,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ]),
           backgroundColor: const Color(0xFF22C55E),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
       } else {
         String errMsg = tr('profile_updated_error');
@@ -172,7 +223,10 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(
-          content: Text(tr('profile_connection_error'))));
+        content: Text(tr('profile_connection_error')),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -186,17 +240,35 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
+    if (_loadError != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(_loadError!),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProfile,
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ValueListenableBuilder<String>(
       valueListenable: LanguageSettings.instance.locale,
       builder: (context, locale, child) {
         final tr = LanguageSettings.instance.tr;
-        final auth = AuthService();
-        final isAdmin = auth.isAdmin;
+        final isAdmin = AuthService().isAdmin;
 
         return Scaffold(
           body: CustomScrollView(
             slivers: [
-              // ── Hero app bar ──────────────────────────────────────────
               SliverAppBar(
                 expandedHeight: 220,
                 pinned: true,
@@ -224,12 +296,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
-                          child: Image.asset('assets/images/logo.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => Icon(
-                                  Icons.flight_takeoff,
-                                  color: AppColorScheme.accentFor(context),
-                                  size: 16)),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => Icon(
+                              Icons.flight_takeoff,
+                              color: AppColorScheme.accentFor(context),
+                              size: 16,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -241,13 +316,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 actions: [
                   IconButton(
-                    icon: Icon(
-                        _editMode ? Icons.close : Icons.edit_outlined),
+                    icon: Icon(_editMode ? Icons.close : Icons.edit_outlined),
                     tooltip: _editMode
                         ? tr('cancel')
                         : tr('profile_edit_tooltip'),
-                    onPressed: () =>
-                        setState(() => _editMode = !_editMode),
+                    onPressed: _editMode ? _cancelEditMode : _enterEditMode,
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
@@ -271,8 +344,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           height: 180,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color:
-                                Colors.white.withValues(alpha: 0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                       ),
@@ -280,67 +352,70 @@ class _ProfilePageState extends State<ProfilePage> {
                         bottom: 24,
                         left: 0,
                         right: 0,
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white
-                                    .withValues(alpha: 0.15),
-                                border: Border.all(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.5),
-                                    width: 2.5),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _initials,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.w800,
+                        child: ListenableBuilder(
+                          listenable: _usuarioController,
+                          builder: (context2, child2) => Column(
+                            children: [
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    width: 2.5,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _initials,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _usuarioController.text.isEmpty
-                                  ? tr('profile_title')
-                                  : _usuarioController.text,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isAdmin
-                                    ? const Color(0xFFFFB700)
-                                    : Colors.white
-                                        .withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                isAdmin
-                                    ? tr('profile_admin')
-                                    : tr('profile_traveler'),
-                                style: TextStyle(
-                                  color: isAdmin
-                                      ? Theme.of(context).colorScheme.onSurface
-                                      : Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                              const SizedBox(height: 10),
+                              Text(
+                                _usuarioController.text.isEmpty
+                                    ? tr('profile_title')
+                                    : _usuarioController.text,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isAdmin
+                                      ? const Color(0xFFFFB700)
+                                      : Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  isAdmin
+                                      ? tr('profile_admin')
+                                      : tr('profile_traveler'),
+                                  style: TextStyle(
+                                    color: isAdmin
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                        : Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -356,17 +431,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Stats strip ──────────────────────────────────
+                        // ── Stats ───────────────────────────────────────────
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    Colors.black.withValues(alpha: 0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -392,16 +465,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 24),
                         _sectionLabel(tr('profile_section_personal')),
 
-                        // ── Fields ───────────────────────────────────────
                         _buildField(
                           controller: _usuarioController,
                           label: tr('profile_username'),
                           icon: Icons.person_outline,
                           enabled: _editMode,
-                          validator: (v) =>
-                              (v == null || v.trim().isEmpty)
-                                  ? tr('profile_required')
-                                  : null,
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? tr('profile_required')
+                              : null,
                         ),
                         const SizedBox(height: 12),
                         _buildField(
@@ -420,8 +491,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             return null;
                           },
                         ),
+
                         const SizedBox(height: 24),
                         _sectionLabel(tr('profile_section_extra')),
+
                         _buildField(
                           controller: _direccionController,
                           label: tr('profile_address'),
@@ -465,30 +538,27 @@ class _ProfilePageState extends State<ProfilePage> {
                           },
                         ),
 
-                        // ── Save button ──────────────────────────────────
+                        // ── Botón guardar ───────────────────────────────────
                         if (_editMode) ...[
                           const SizedBox(height: 28),
                           SizedBox(
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed:
-                                  _isSaving ? null : _saveProfile,
+                              onPressed: _isSaving ? null : _saveProfile,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _blue,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(14)),
+                                    borderRadius: BorderRadius.circular(14)),
                               ),
                               child: _isSaving
                                   ? const SizedBox(
                                       width: 22,
                                       height: 22,
                                       child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2),
+                                          color: Colors.white, strokeWidth: 2),
                                     )
                                   : Text(tr('profile_save'),
                                       style: const TextStyle(
@@ -498,7 +568,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ],
 
-                        // ── Account card ─────────────────────────────────
+                        // ── Cuenta ──────────────────────────────────────────
                         const SizedBox(height: 24),
                         _sectionLabel(tr('profile_section_account')),
                         Container(
@@ -507,8 +577,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    Colors.black.withValues(alpha: 0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -520,16 +589,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                 icon: Icons.lock_outline,
                                 color: _accent,
                                 label: tr('profile_change_password'),
-                                onTap: () => Navigator.pushNamed(
-                                    context, '/settings'),
+                                onTap: () =>
+                                    Navigator.pushNamed(context, '/settings'),
                               ),
                               const Divider(height: 0, indent: 56),
                               _accountTile(
                                 icon: Icons.shield_outlined,
                                 color: const Color(0xFF7C3AED),
                                 label: tr('profile_2fa'),
-                                onTap: () => Navigator.pushNamed(
-                                    context, '/settings'),
+                                onTap: () =>
+                                    Navigator.pushNamed(context, '/settings'),
                               ),
                               const Divider(height: 0, indent: 56),
                               _accountTile(
@@ -616,7 +685,9 @@ class _ProfilePageState extends State<ProfilePage> {
         hintText: hint,
         prefixIcon: Icon(
           icon,
-          color: enabled ? _accent : Theme.of(context).colorScheme.onSurfaceVariant,
+          color: enabled
+              ? _accent
+              : Theme.of(context).colorScheme.onSurfaceVariant,
           size: 20,
         ),
         filled: true,
@@ -635,12 +706,16 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0071C2), width: 1.5),
+          borderSide:
+              const BorderSide(color: Color(0xFF0071C2), width: 1.5),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.5),
           ),
         ),
       ),
@@ -657,8 +732,7 @@ class _ProfilePageState extends State<ProfilePage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
@@ -672,10 +746,11 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(width: 14),
             Expanded(
-                child: Text(label,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface))),
+              child: Text(label,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface)),
+            ),
             Icon(Icons.chevron_right,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 18),
