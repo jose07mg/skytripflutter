@@ -693,6 +693,7 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _selectedDateRange = picked;
     });
+    _applyFilters();
   }
 
   String _normalize(String value) {
@@ -3291,28 +3292,37 @@ class _TopSelect<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      isExpanded: true,
-      items: values.map((item) {
-        final display = (allLabel != null && item.toString().isEmpty)
-            ? allLabel!
-            : item.toString();
-        return DropdownMenuItem<T>(
-          value: item,
-          child: Text(display, overflow: TextOverflow.ellipsis),
-        );
-      }).toList(),
-      onChanged: (value) {
-        if (value != null) onChanged(value);
-      },
+    final items = values.map((item) {
+      final display = (allLabel != null && item.toString().isEmpty)
+          ? allLabel!
+          : item.toString();
+      return DropdownMenuItem<T>(
+        value: item,
+        child: Text(display, overflow: TextOverflow.ellipsis),
+      );
+    }).toList();
+
+    return InputDecorator(
       decoration: InputDecoration(
         labelText: label,
         filled: true,
+        isDense: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      child: DropdownButton<T>(
+        value: value,
+        isExpanded: true,
+        underline: const SizedBox.shrink(),
+        isDense: true,
+        items: items,
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
       ),
     );
   }
