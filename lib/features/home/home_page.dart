@@ -2648,70 +2648,65 @@ class _SearchScreenState extends State<SearchScreen> {
           LayoutBuilder(
             builder: (context, constraints) {
               final cols = constraints.maxWidth > 600 ? 4 : 2;
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: cols,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: cols == 4 ? 0.85 : 0.72,
-                ),
-                itemCount: benefits.length,
-                itemBuilder: (context, i) {
-                  final b = benefits[i];
-                  return Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FF),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE3E9F7)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF003B95),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            b['icon'] as IconData,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+              final cardWidth =
+                  (constraints.maxWidth - 16 * (cols - 1)) / cols;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: benefits.map((b) {
+                  return SizedBox(
+                    width: cardWidth,
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          b['title'] as String,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1F36),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Flexible(
-                          child: Text(
-                            b['desc'] as String,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              height: 1.4,
-                              color: Color(0xFF6B7A99),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF003B95),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              b['icon'] as IconData,
+                              color: Colors.white,
+                              size: 20,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          Text(
+                            b['title'] as String,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            b['desc'] as String,
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.4,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
-                },
+                }).toList(),
               );
             },
           ),
