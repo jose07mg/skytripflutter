@@ -66,57 +66,55 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadProfile() async {
     final token = AuthService().token;
+    final userId = AuthService().userId;
     if (token == null) {
       setState(() => _isLoading = false);
       return;
     }
-    final headers = {'Authorization': 'Bearer $token'};
+    final authHeaders = {'Authorization': 'Bearer $token'};
     try {
-      final results = await Future.wait([
-        http.get(Uri.parse('${ApiConstants.baseUrl}/me'), headers: headers),
-        http.get(Uri.parse('${ApiConstants.baseUrl}/reservas'), headers: headers),
-        http.get(Uri.parse('${ApiConstants.baseUrl}/favoritos'), headers: headers),
-      ]);
+      // All 4 calls in parallel — reviews filtered by userId from AuthService
+      final futures = <Future<http.Response>>[
+        http.get(Uri.parse('${ApiConstants.baseUrl}/me'), headers: authHeaders),
+        http.get(Uri.parse('${ApiConstants.baseUrl}/reservas'), headers: authHeaders),
+        http.get(Uri.parse('${ApiConstants.baseUrl}/favoritos'), headers: authHeaders),
+        if (userId != null)
+          http.get(Uri.parse('${ApiConstants.baseUrl}/reviews?id_usuario=$userId')),
+      ];
+      final results = await Future.wait(futures);
 
-      // Profile
+      // Profile data
       if (results[0].statusCode == 200) {
         final data = jsonDecode(results[0].body);
-        final user = (data is Map) ? data : null;
-        if (user != null) {
-          _usuarioController.text = user['usuario']?.toString() ?? '';
-          _emailController.text = user['email']?.toString() ?? '';
-          _direccionController.text = user['direccion']?.toString() ?? '';
-          _paisNacimientoController.text = user['pais_nacimiento']?.toString() ?? '';
-          _fechaNacimientoController.text = user['fecha_nacimiento']?.toString() ?? '';
-
-          // Reviews — filtered by user ID
-          final userId = user['id_usuario'];
-          if (userId != null) {
-            try {
-              final rv = await http.get(
-                Uri.parse('${ApiConstants.baseUrl}/reviews?id_usuario=$userId'),
-              );
-              if (rv.statusCode == 200) {
-                final list = jsonDecode(rv.body);
-                _reviewsCount = list is List ? list.length : 0;
-              }
-            } catch (_) {}
-          }
+        if (data is Map) {
+          _usuarioController.text = data['usuario']?.toString() ?? '';
+          _emailController.text = data['email']?.toString() ?? '';
+          _direccionController.text = data['direccion']?.toString() ?? '';
+          _paisNacimientoController.text = data['pais_nacimiento']?.toString() ?? '';
+          _fechaNacimientoController.text = data['fecha_nacimiento']?.toString() ?? '';
         }
       }
 
-      // Reservas
+      // Reservas (solo del usuario autenticado — filtrado por JWT en el servidor)
       if (results[1].statusCode == 200) {
         final list = jsonDecode(results[1].body);
         _reservasCount = list is List
             ? list.length
-            : (list is Map && list['data'] is List ? (list['data'] as List).length : 0);
+            : (list is Map && list['data'] is List
+                ? (list['data'] as List).length
+                : 0);
       }
 
-      // Favoritos
+      // Favoritos (solo del usuario autenticado — filtrado por JWT en el servidor)
       if (results[2].statusCode == 200) {
         final list = jsonDecode(results[2].body);
         _favoritosCount = list is List ? list.length : 0;
+      }
+
+      // Reseñas del usuario (filtradas por id_usuario en el servidor)
+      if (userId != null && results.length == 4 && results[3].statusCode == 200) {
+        final list = jsonDecode(results[3].body);
+        _reviewsCount = list is List ? list.length : 0;
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
@@ -363,7 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           padding:
                               const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -505,7 +503,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _sectionLabel(tr('profile_section_account')),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -570,20 +568,24 @@ class _ProfilePageState extends State<ProfilePage> {
           Icon(icon, color: _blue, size: 22),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
-                  color: Color(0xFF1A1F36))),
+                  color: Theme.of(context).colorScheme.onSurface)),
           Text(label,
-              style: const TextStyle(
-                  fontSize: 11, color: Color(0xFF6B7A99))),
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );
   }
 
-  Widget _divider() =>
-      Container(width: 1, height: 40, color: const Color(0xFFE8ECF4));
+  Widget _divider() => Container(
+        width: 1,
+        height: 40,
+        color: Theme.of(context).colorScheme.outlineVariant,
+      );
 
   Widget _sectionLabel(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -612,26 +614,34 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon:
-            Icon(icon, color: enabled ? _accent : Colors.grey, size: 20),
+        prefixIcon: Icon(
+          icon,
+          color: enabled ? _accent : Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 20,
+        ),
         filled: true,
-        fillColor: enabled ? Colors.white : const Color(0xFFF5F7FB),
+        fillColor: enabled
+            ? Theme.of(context).colorScheme.surface
+            : Theme.of(context).colorScheme.surfaceContainerLow,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE8ECF4)),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFF0071C2), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF0071C2), width: 1.5),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFF0F0F0)),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
       ),
     );
@@ -663,11 +673,12 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(width: 14),
             Expanded(
                 child: Text(label,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A1F36)))),
-            const Icon(Icons.chevron_right,
-                color: Color(0xFF9CA8C0), size: 18),
+                        color: Theme.of(context).colorScheme.onSurface))),
+            Icon(Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 18),
           ],
         ),
       ),
