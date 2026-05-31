@@ -5,24 +5,24 @@ import '../../shared/themes/color_scheme.dart';
 import '../../shared/widgets/design/layout/custom_app_bar.dart';
 import '../../shared/widgets/design/layout/footer.dart';
 import '../auth/auth_service.dart';
-
+ 
 class EditHotelPage extends StatefulWidget {
   final Map<String, dynamic> hotel;
-
+ 
   const EditHotelPage({super.key, required this.hotel});
-
+ 
   @override
   State<EditHotelPage> createState() => _EditHotelPageState();
 }
-
+ 
 class _EditHotelPageState extends State<EditHotelPage> {
   static const Color _blue  = Color(0xFF003B95);
-  static const Color _blue2 = Color(0xFF6B9FD4); // blue para dark mode
-
+  static const Color _blue2 = Color(0xFF6B9FD4);
+ 
   final _formKey      = GlobalKey<FormState>();
   final _hotelService = HotelService();
   final _authService  = AuthService();
-
+ 
   late final TextEditingController _nombreController;
   late final TextEditingController _biografiaController;
   late final TextEditingController _precioController;
@@ -33,17 +33,18 @@ class _EditHotelPageState extends State<EditHotelPage> {
   late final TextEditingController _puntuacionController;
   late final TextEditingController _imagenController;
   late final TextEditingController _serviciosController;
-
+ 
   List<Map<String, dynamic>> _ciudades       = [];
   bool                        _loadingCiudades = true;
   int?                        _selectedCiudadId;
   bool                        _isLoading       = false;
-
+  String?                     _ciudadError;
+ 
   bool get _isCreating {
     final id = widget.hotel['id_hotel'] ?? widget.hotel['id'] ?? widget.hotel['idHotel'];
     return id == null || int.tryParse(id.toString()) == null;
   }
-
+ 
   @override
   void initState() {
     super.initState();
@@ -67,13 +68,13 @@ class _EditHotelPageState extends State<EditHotelPage> {
         text: widget.hotel['imagen']?.toString() ?? widget.hotel['image']?.toString() ?? '');
     _serviciosController = TextEditingController(
         text: (widget.hotel['servicios'] as List<dynamic>?)?.join(', ') ?? '');
-
+ 
     final cityId = widget.hotel['id_ciudad'];
     if (cityId != null) _selectedCiudadId = int.tryParse(cityId.toString());
-
+ 
     _loadCiudades();
   }
-
+ 
   @override
   void dispose() {
     _nombreController.dispose();
@@ -88,7 +89,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
     _serviciosController.dispose();
     super.dispose();
   }
-
+ 
   Future<void> _loadCiudades() async {
     try {
       final list = await _hotelService.getCiudades();
@@ -113,21 +114,20 @@ class _EditHotelPageState extends State<EditHotelPage> {
       if (mounted) setState(() => _loadingCiudades = false);
     }
   }
-
-  // ── Helpers de UI ──────────────────────────────────────────
-
+ 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-
+ 
   Color get _fieldFill    => _isDark ? const Color(0xFF1A2333) : const Color(0xFFF5F7FB);
   Color get _borderColor  => _isDark ? const Color(0xFF2D3E5A) : const Color(0xFFDDE4F7);
   Color get _iconColor    => _isDark ? const Color(0xFF8BA0C4) : const Color(0xFF5A6A8A);
   Color get _labelColor   => _isDark ? const Color(0xFF9BBAD6) : const Color(0xFF4A5568);
   Color get _accentColor  => _isDark ? _blue2 : _blue;
-
-  InputDecoration _field(String label, {String? hint, IconData? icon}) {
+ 
+  InputDecoration _field(String label, {String? hint, IconData? icon, String? errorText}) {
     return InputDecoration(
       labelText:   label,
       hintText:    hint,
+      errorText:   errorText,
       labelStyle:  TextStyle(color: _labelColor, fontSize: 14),
       hintStyle:   TextStyle(color: _labelColor.withValues(alpha: 0.6), fontSize: 14),
       prefixIcon:  icon != null ? Icon(icon, color: _iconColor, size: 20) : null,
@@ -157,7 +157,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
       errorStyle: const TextStyle(color: Color(0xFFE53E3E), fontSize: 12),
     );
   }
-
+ 
   Widget _sectionTitle(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Text(
@@ -170,7 +170,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
       ),
     ),
   );
-
+ 
   Widget _card({required Widget child}) => Container(
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
@@ -187,22 +187,21 @@ class _EditHotelPageState extends State<EditHotelPage> {
     padding: const EdgeInsets.all(16),
     child: child,
   );
-
-  // ── Acciones ──────────────────────────────────────────────
-
+ 
   Future<void> _saveHotel() async {
     if (!_formKey.currentState!.validate()) return;
-
+ 
     if (_selectedCiudadId == null) {
+      setState(() => _ciudadError = 'Selecciona una ciudad');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Por favor selecciona una ciudad'),
         backgroundColor: Colors.orange,
       ));
       return;
     }
-
+ 
     setState(() => _isLoading = true);
-
+ 
     try {
       final hotelData = {
         'nombre':                   _nombreController.text.trim(),
@@ -218,13 +217,13 @@ class _EditHotelPageState extends State<EditHotelPage> {
         'servicios': _serviciosController.text
             .split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
       };
-
+ 
       final success = _isCreating
           ? await _hotelService.createHotel(hotelData)
           : await _hotelService.updateHotel(
               int.tryParse((widget.hotel['id_hotel'] ?? widget.hotel['id'] ?? widget.hotel['idHotel']).toString()) ?? 0,
               hotelData);
-
+ 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_isCreating ? 'Hotel creado correctamente' : 'Hotel actualizado correctamente'),
@@ -243,12 +242,12 @@ class _EditHotelPageState extends State<EditHotelPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
+ 
   Future<void> _deleteHotel() async {
     final id      = widget.hotel['id_hotel'] ?? widget.hotel['id'] ?? widget.hotel['idHotel'];
     final hotelId = int.tryParse(id?.toString() ?? '');
     if (hotelId == null) return;
-
+ 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -265,9 +264,9 @@ class _EditHotelPageState extends State<EditHotelPage> {
         ],
       ),
     );
-
+ 
     if (confirmed != true) return;
-
+ 
     setState(() => _isLoading = true);
     try {
       final success = await _hotelService.deleteHotel(hotelId);
@@ -289,9 +288,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  // ── Build ─────────────────────────────────────────────────
-
+ 
   @override
   Widget build(BuildContext context) {
     if (!_authService.isAdmin) {
@@ -300,7 +297,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
         body: const Center(child: Text('Solo los administradores pueden editar hoteles')),
       );
     }
-
+ 
     return Scaffold(
       appBar: SkyTripAppBar(
         title: _isCreating ? 'Añadir Hotel' : 'Editar Hotel',
@@ -333,8 +330,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-
-            // ── Información básica ────────────────────────────
+ 
             _sectionTitle('Información básica'),
             _card(child: Column(children: [
               TextFormField(
@@ -356,7 +352,6 @@ class _EditHotelPageState extends State<EditHotelPage> {
                 decoration: _field('URL de imagen', icon: Icons.image_outlined),
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
-              // Preview de imagen si hay URL
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _imagenController,
                 builder: (_, val, __) {
@@ -394,8 +389,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
               ),
             ])),
             const SizedBox(height: 20),
-
-            // ── Ubicación ─────────────────────────────────────
+ 
             _sectionTitle('Ubicación'),
             _card(child: Column(children: [
               if (_loadingCiudades)
@@ -429,7 +423,9 @@ class _EditHotelPageState extends State<EditHotelPage> {
                 )
               else
                 InputDecorator(
-                  decoration: _field('Ciudad / País', icon: Icons.location_city).copyWith(
+                  decoration: _field(
+                    'Ciudad / País',
+                    icon: Icons.location_city,
                     errorText: _ciudadError,
                   ),
                   child: DropdownButton<int>(
@@ -495,8 +491,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
               ]),
             ])),
             const SizedBox(height: 20),
-
-            // ── Precios y características ─────────────────────
+ 
             _sectionTitle('Precios y características'),
             _card(child: Column(children: [
               Row(children: [
@@ -560,8 +555,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
               ]),
             ])),
             const SizedBox(height: 20),
-
-            // ── Servicios ─────────────────────────────────────
+ 
             _sectionTitle('Servicios'),
             _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
@@ -581,8 +575,7 @@ class _EditHotelPageState extends State<EditHotelPage> {
               ),
             ])),
             const SizedBox(height: 28),
-
-            // ── Botón guardar ─────────────────────────────────
+ 
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
