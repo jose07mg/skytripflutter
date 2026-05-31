@@ -33,6 +33,8 @@ class TripDetailPage extends StatefulWidget {
 class _TripDetailPageState extends State<TripDetailPage> {
   static const Color _blue = Color(0xFF003B95);
 
+  late Map<String, dynamic> _hotelData;
+
   List<Map<String, dynamic>> _habitaciones = [];
   bool _isLoadingHabitaciones = true;
   String? _errorMessage;
@@ -67,8 +69,65 @@ class _TripDetailPageState extends State<TripDetailPage> {
   @override
   void initState() {
     super.initState();
+    _hotelData = Map<String, dynamic>.from(widget.trip);
     _loadHabitaciones();
     _loadResenas();
+  }
+
+  Future<void> _reloadHotel() async {
+    final idHotel = _parseInt(
+      _hotelData['idHotel'] ?? _hotelData['id_hotel'] ?? _hotelData['id'],
+    );
+    if (idHotel == 0) return;
+    try {
+      final response = await http
+          .get(Uri.parse('${ApiConstants.baseUrl}/hoteles'))
+          .timeout(const Duration(seconds: 15));
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List lista = body is List
+            ? body
+            : body is Map && body['data'] is List
+            ? body['data']
+            : [];
+        final hotel = lista.cast<Map>().firstWhere(
+          (h) => _parseInt(h['id_hotel']) == idHotel,
+          orElse: () => {},
+        );
+        if (hotel.isNotEmpty && mounted) {
+          // Merge keeping Flutter-side keys (hotelName, city, etc.)
+          final merged = Map<String, dynamic>.from(_hotelData);
+          merged['nombre'] = hotel['nombre'] ?? merged['nombre'];
+          merged['hotelName'] = hotel['nombre'] ?? merged['hotelName'];
+          merged['biografia'] = hotel['biografia'] ?? merged['biografia'];
+          merged['description'] = hotel['biografia'] ?? merged['description'];
+          merged['precio_noche'] =
+              hotel['precio_noche'] ?? merged['precio_noche'];
+          merged['price'] = hotel['precio_noche'] ?? merged['price'];
+          merged['puntuacion'] = hotel['puntuacion'] ?? merged['puntuacion'];
+          merged['rating'] = hotel['puntuacion'] ?? merged['rating'];
+          merged['estrellas'] = hotel['estrellas'] ?? merged['estrellas'];
+          merged['imagen'] = hotel['imagen'] ?? merged['imagen'];
+          merged['image'] = hotel['imagen'] ?? merged['image'];
+          merged['capacidad_personas'] =
+              hotel['capacidad_personas'] ?? merged['capacidad_personas'];
+          merged['maxPeople'] =
+              hotel['capacidad_personas'] ?? merged['maxPeople'];
+          merged['distancia_centro_km'] =
+              hotel['distancia_centro_km'] ?? merged['distancia_centro_km'];
+          merged['distanceCenter'] =
+              hotel['distancia_centro_km'] ?? merged['distanceCenter'];
+          merged['distancia_aeropuerto_km'] =
+              hotel['distancia_aeropuerto_km'] ??
+              merged['distancia_aeropuerto_km'];
+          merged['distanceAirport'] =
+              hotel['distancia_aeropuerto_km'] ?? merged['distanceAirport'];
+          merged['servicios'] = hotel['servicios'] ?? merged['servicios'];
+          setState(() => _hotelData = merged);
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadHabitaciones() async {
@@ -79,7 +138,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
     });
 
     final idHotel = _parseInt(
-      widget.trip['idHotel'] ?? widget.trip['id_hotel'] ?? widget.trip['id'],
+      _hotelData['idHotel'] ?? _hotelData['id_hotel'] ?? _hotelData['id'],
     );
 
     if (idHotel == 0) {
@@ -139,7 +198,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   Future<void> _loadResenas() async {
     final idHotel = _parseInt(
-      widget.trip['idHotel'] ?? widget.trip['id_hotel'] ?? widget.trip['id'],
+      _hotelData['idHotel'] ?? _hotelData['id_hotel'] ?? _hotelData['id'],
     );
     if (idHotel == 0) {
       if (mounted) setState(() => _isLoadingResenas = false);
@@ -264,7 +323,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
       context,
       MaterialPageRoute(
         builder: (_) => ConfirmarReservaPage(
-          hotel: widget.trip,
+          hotel: _hotelData,
           habitacion: habitacion,
           huespedes: widget.huespedes,
           fechaSeleccionada: widget.fechaSeleccionada,
@@ -274,25 +333,32 @@ class _TripDetailPageState extends State<TripDetailPage> {
     if (result == true) widget.onPurchase();
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final imageUrl = ApiConstants.normalizeImageUrl(
-      widget.trip['image'] ?? widget.trip['imagen'],
+      _hotelData['image'] ?? _hotelData['imagen'],
     );
-    final services = (widget.trip['servicios'] as List<dynamic>? ?? const [])
+    final services = (_hotelData['servicios'] as List<dynamic>? ?? const [])
         .map((s) => s.toString())
         .toList();
-    final hotelName = widget.trip['hotelName']?.toString() ?? 'Hotel';
+    final hotelName =
+        _hotelData['hotelName']?.toString() ??
+        _hotelData['nombre']?.toString() ??
+        'Hotel';
     final city = LanguageSettings.instance.trCity(
-      widget.trip['city']?.toString() ?? '',
+      _hotelData['city']?.toString() ??
+          _hotelData['ciudad_nombre']?.toString() ??
+          '',
     );
     final country = LanguageSettings.instance.trCountry(
-      widget.trip['country']?.toString() ?? '',
+      _hotelData['country']?.toString() ??
+          _hotelData['pais_nombre']?.toString() ??
+          '',
     );
-    final stars = (widget.trip['estrellas'] as num?)?.toInt() ?? 0;
-    final rating = _parseDouble(widget.trip['rating']);
+    final stars = (_hotelData['estrellas'] as num?)?.toInt() ?? 0;
+    final rating = _parseDouble(
+      _hotelData['rating'] ?? _hotelData['puntuacion'],
+    );
     final tr = LanguageSettings.instance.tr;
     final ratingLabel = rating >= 9.0
         ? tr('trip_rating_exceptional')
@@ -307,7 +373,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // ── App bar with hero image ──────────────────────────────────
           SliverAppBar(
             expandedHeight: 420,
             pinned: true,
@@ -352,7 +417,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      widget.trip['hotelName']?.toString() ?? 'Hotel',
+                      hotelName,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 17,
@@ -386,13 +451,13 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     final updated = await Navigator.push<bool?>(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => EditHotelPage(hotel: widget.trip),
+                        builder: (_) => EditHotelPage(hotel: _hotelData),
                       ),
                     );
                     if (updated == true && mounted) {
+                      await _reloadHotel();
                       _loadHabitaciones();
                       _loadResenas();
-                      setState(() {});
                     }
                   },
                 ),
@@ -410,7 +475,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 fit: StackFit.expand,
                 children: [
                   _buildHeroImage(imageUrl),
-                  // gradient overlay
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
@@ -421,7 +485,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                       ),
                     ),
                   ),
-                  // Hotel name + location on image
                   Positioned(
                     left: 16,
                     right: 16,
@@ -430,7 +493,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Stars
                         Row(
                           children: List.generate(
                             stars.clamp(0, 5),
@@ -479,162 +541,149 @@ class _TripDetailPageState extends State<TripDetailPage> {
             ),
           ),
 
-          // ── Body content ─────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Score + quick facts ─────────────────────────────
                 Container(
                   color: Colors.white,
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Rating row
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (rating > 0) ...[
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _blue,
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(8),
-                                            topRight: Radius.circular(8),
-                                            bottomRight: Radius.circular(8),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          rating.toStringAsFixed(1),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 18,
-                                          ),
-                                        ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (rating > 0) ...[
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _blue,
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(8),
+                                        topRight: Radius.circular(8),
+                                        bottomRight: Radius.circular(8),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            ratingLabel,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColorScheme.titleFor(
-                                                context,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            tr('trip_score_label'),
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFF6B7A99),
-                                            ),
-                                          ),
-                                        ],
+                                    ),
+                                    child: Text(
+                                      rating.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 16),
-                                ],
-                                // Quick facts
-                                Wrap(
-                                  spacing: 12,
-                                  runSpacing: 8,
-                                  children: [
-                                    _Chip(
-                                      Icons.people_alt_outlined,
-                                      '${tr('trip_up_to')} ${widget.trip['maxPeople']} ${tr('trip_guests')}',
-                                    ),
-                                    _Chip(
-                                      Icons.location_city_outlined,
-                                      '${_parseDouble(widget.trip['distanceCenter']).toStringAsFixed(1)} ${tr('trip_km_center')}',
-                                    ),
-                                    _Chip(
-                                      Icons.flight_takeoff_outlined,
-                                      '${_parseDouble(widget.trip['distanceAirport']).toStringAsFixed(1)} ${tr('trip_km_airport')}',
-                                    ),
-                                    _Chip(
-                                      Icons.hotel_outlined,
-                                      stars > 0
-                                          ? '$stars ${tr('trip_stars_label')}'
-                                          : tr('trip_no_category'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Price column
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              ValueListenableBuilder<String>(
-                                valueListenable:
-                                    CurrencySettings.instance.currency,
-                                builder: (ctx, currency, _) {
-                                  final price = _parseDouble(
-                                    widget.trip['price'],
-                                  );
-                                  final nights =
-                                      widget
-                                          .fechaSeleccionada
-                                          ?.duration
-                                          .inDays ??
-                                      1;
-                                  final total = price * nights;
-                                  final cs = CurrencySettings.instance;
-                                  return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                  const SizedBox(width: 10),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${cs.getConvertedPrice(price)}${cs.getSymbol()}',
+                                        ratingLabel,
                                         style: TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.w900,
-                                          color: Theme.of(
-                                            ctx,
-                                          ).colorScheme.onSurface,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColorScheme.titleFor(
+                                            context,
+                                          ),
                                         ),
                                       ),
                                       Text(
-                                        tr('trip_per_night'),
+                                        tr('trip_score_label'),
                                         style: const TextStyle(
                                           fontSize: 12,
                                           color: Color(0xFF6B7A99),
                                         ),
                                       ),
-                                      if (nights > 1)
-                                        Text(
-                                          '${cs.getConvertedPrice(total)}${cs.getSymbol()} ${tr('trip_total')} · $nights ${tr('trip_nights')}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColorScheme.accentFor(
-                                              context,
-                                            ),
-                                          ),
-                                        ),
                                     ],
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 16),
                             ],
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 8,
+                              children: [
+                                _Chip(
+                                  Icons.people_alt_outlined,
+                                  '${tr('trip_up_to')} ${_hotelData['maxPeople'] ?? _hotelData['capacidad_personas']} ${tr('trip_guests')}',
+                                ),
+                                _Chip(
+                                  Icons.location_city_outlined,
+                                  '${_parseDouble(_hotelData['distanceCenter'] ?? _hotelData['distancia_centro_km']).toStringAsFixed(1)} ${tr('trip_km_center')}',
+                                ),
+                                _Chip(
+                                  Icons.flight_takeoff_outlined,
+                                  '${_parseDouble(_hotelData['distanceAirport'] ?? _hotelData['distancia_aeropuerto_km']).toStringAsFixed(1)} ${tr('trip_km_airport')}',
+                                ),
+                                _Chip(
+                                  Icons.hotel_outlined,
+                                  stars > 0
+                                      ? '$stars ${tr('trip_stars_label')}'
+                                      : tr('trip_no_category'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          ValueListenableBuilder<String>(
+                            valueListenable: CurrencySettings.instance.currency,
+                            builder: (ctx, currency, _) {
+                              final price = _parseDouble(
+                                _hotelData['price'] ??
+                                    _hotelData['precio_noche'],
+                              );
+                              final nights =
+                                  widget.fechaSeleccionada?.duration.inDays ??
+                                  1;
+                              final total = price * nights;
+                              final cs = CurrencySettings.instance;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${cs.getConvertedPrice(price)}${cs.getSymbol()}',
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w900,
+                                      color: Theme.of(
+                                        ctx,
+                                      ).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    tr('trip_per_night'),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF6B7A99),
+                                    ),
+                                  ),
+                                  if (nights > 1)
+                                    Text(
+                                      '${cs.getConvertedPrice(total)}${cs.getSymbol()} ${tr('trip_total')} · $nights ${tr('trip_nights')}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColorScheme.accentFor(
+                                          context,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -643,12 +692,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 ),
 
                 const SizedBox(height: 10),
-
-                // ── Description ────────────────────────────────────
                 _buildDescription(tr),
 
-                // ── Services grid ───────────────────────────────────
-                if (services.isNotEmpty) ...[
+                if (services.isNotEmpty)
                   _Section(
                     title: tr('trip_services'),
                     child: Wrap(
@@ -694,9 +740,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                       }).toList(),
                     ),
                   ),
-                ],
 
-                // ── Location info ───────────────────────────────────
                 _Section(
                   title: tr('trip_location'),
                   child: Column(
@@ -727,25 +771,23 @@ class _TripDetailPageState extends State<TripDetailPage> {
                       _InfoRow(
                         Icons.location_city_outlined,
                         tr('trip_city_center'),
-                        '${_parseDouble(widget.trip['distanceCenter']).toStringAsFixed(1)} km',
+                        '${_parseDouble(_hotelData['distanceCenter'] ?? _hotelData['distancia_centro_km']).toStringAsFixed(1)} km',
                       ),
                       const SizedBox(height: 8),
                       _InfoRow(
                         Icons.flight_outlined,
                         tr('trip_nearest_airport'),
-                        '${_parseDouble(widget.trip['distanceAirport']).toStringAsFixed(1)} km',
+                        '${_parseDouble(_hotelData['distanceAirport'] ?? _hotelData['distancia_aeropuerto_km']).toStringAsFixed(1)} km',
                       ),
                     ],
                   ),
                 ),
 
-                // ── Rooms section ───────────────────────────────────
                 _Section(
                   title: tr('trip_available_rooms'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Guest summary chip
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -817,7 +859,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                   ),
                 ),
 
-                // ── Reviews section ─────────────────────────────────
                 _Section(
                   title: tr('trip_guest_reviews'),
                   child: _isLoadingResenas
@@ -842,7 +883,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 ),
 
                 _buildPoliciesSection(),
-
                 const FooterWidget(),
               ],
             ),
@@ -905,17 +945,15 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  // ── Description section: EN if available, ES fallback ──────
   Widget _buildDescription(String Function(String) tr) {
     final locale = LanguageSettings.instance.locale.value;
-    final descEn = widget.trip['description_en']?.toString() ?? '';
-    final descEs = widget.trip['description']?.toString() ?? '';
-
-    // Pick the right text: prefer EN when locale is en and it's not empty
+    final descEn = _hotelData['description_en']?.toString() ?? '';
+    final descEs =
+        _hotelData['description']?.toString() ??
+        _hotelData['biografia']?.toString() ??
+        '';
     final text = (locale == 'en' && descEn.isNotEmpty) ? descEn : descEs;
-
     if (text.isEmpty) return const SizedBox.shrink();
-
     return _Section(
       title: tr('trip_about'),
       child: Column(
@@ -929,7 +967,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
               color: Color(0xFF3D4A6B),
             ),
           ),
-          // Show notice when EN is requested but only ES is available
           if (locale == 'en' && descEn.isEmpty && descEs.isNotEmpty) ...[
             const SizedBox(height: 8),
             Row(
@@ -1104,23 +1141,18 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  /// Devuelve una URL de Unsplash según el tipo de habitación
   String _roomImageUrl(String tipo) {
     final t = tipo.toLowerCase();
     if (t.contains('suite'))
       return 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1400&q=90&fit=crop';
     if (t.contains('deluxe'))
       return 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1400&q=90&fit=crop';
-    if (t.contains('familiar') || t.contains('family')) {
+    if (t.contains('familiar') || t.contains('family'))
       return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1400&q=90&fit=crop';
-    }
-    if (t.contains('doble') || t.contains('double')) {
+    if (t.contains('doble') || t.contains('double'))
       return 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1400&q=90&fit=crop';
-    }
-    if (t.contains('individual') || t.contains('single')) {
+    if (t.contains('individual') || t.contains('single'))
       return 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1400&q=90&fit=crop';
-    }
-    // estándar / resto
     return 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=1400&q=90&fit=crop';
   }
 
@@ -1133,14 +1165,12 @@ class _TripDetailPageState extends State<TripDetailPage> {
     final tipo = h['tipo_habitacion']?.toString() ?? tr('trip_room_default');
     final descripcion = h['descripcion']?.toString() ?? '';
     final roomImg = _roomImageUrl(tipo);
-
     final borderColor = recommended
         ? const Color(0xFF22C55E)
         : canAccommodate
         ? const Color(0xFFDDE4F7)
         : const Color(0xFFFFCDD2);
 
-    // ── shared sub-widgets ──────────────────────────────────────────────
     Widget imagePanel() => Stack(
       fit: StackFit.loose,
       children: [
@@ -1407,7 +1437,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
       ),
     );
 
-    // ── Responsive layout ───────────────────────────────────────────────
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 600;
@@ -1426,9 +1455,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
           ),
           clipBehavior: Clip.antiAlias,
           child: isDesktop
-              // ── Desktop: imagen izquierda fija, info derecha ─────────
-              // IntrinsicHeight + StackFit.expand causes Flutter layout
-              // errors with network images; use a fixed-height Row instead.
               ? SizedBox(
                   height: 280,
                   child: Row(
@@ -1567,7 +1593,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     ],
                   ),
                 )
-              // ── Móvil: imagen arriba, info abajo ────────────────────
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [imagePanel(), infoPanel()],
@@ -1577,8 +1602,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.child});
