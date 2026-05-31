@@ -1631,16 +1631,106 @@ class _SearchScreenState extends State<SearchScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 980;
-        final halfWidth = (constraints.maxWidth - 10) / 2;
 
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        if (compact) {
+          return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: compact ? constraints.maxWidth : 320,
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: LanguageSettings.instance.tr('home_search_hint'),
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _TopSelect<String>(
+                    label: LanguageSettings.instance.tr('home_city'),
+                    value: _selectedCity,
+                    values: _availableCities,
+                    allLabel: LanguageSettings.instance.tr('home_all_cities'),
+                    onChanged: (value) { _selectedCity = value; _applyFilters(); },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _TopSelect<String>(
+                    label: LanguageSettings.instance.tr('home_country'),
+                    value: _selectedCountry,
+                    values: _availableCountries,
+                    allLabel: LanguageSettings.instance.tr('home_all_countries'),
+                    onChanged: (value) { _selectedCountry = value; _applyFilters(); },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: _selectDateRange,
+              child: InputDecorator(
+                decoration: _fieldDecoration(label: LanguageSettings.instance.tr('home_calendar')),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month, size: 20, color: _accent(context)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_dateRangeLabel, overflow: TextOverflow.ellipsis)),
+                    if (_selectedDateRange != null)
+                      Text('$_selectedStayDays ${LanguageSettings.instance.tr('home_days')}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => _showHuespedesDialog(),
+              child: InputDecorator(
+                decoration: _fieldDecoration(label: LanguageSettings.instance.tr('home_guests')),
+                child: Row(
+                  children: [
+                    Icon(Icons.people, size: 20, color: _accent(context)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_getHuespedesLabel(), overflow: TextOverflow.ellipsis)),
+                    const Icon(Icons.keyboard_arrow_down, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _applyFilters,
+              icon: const Icon(Icons.search, size: 20),
+              label: Text(LanguageSettings.instance.tr('home_search_btn'),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _bookingAccent, foregroundColor: Colors.black87,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+          );
+        }
+
+        // Wide layout: all fields + button in a single row
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 3,
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -1654,120 +1744,81 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-            SizedBox(
-              width: compact ? halfWidth : 190,
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
               child: _TopSelect<String>(
                 label: LanguageSettings.instance.tr('home_city'),
                 value: _selectedCity,
                 values: _availableCities,
                 allLabel: LanguageSettings.instance.tr('home_all_cities'),
-                onChanged: (value) {
-                  _selectedCity = value;
-                  _applyFilters();
-                },
+                onChanged: (value) { _selectedCity = value; _applyFilters(); },
               ),
             ),
-            SizedBox(
-              width: compact ? halfWidth : 190,
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
               child: _TopSelect<String>(
                 label: LanguageSettings.instance.tr('home_country'),
                 value: _selectedCountry,
                 values: _availableCountries,
                 allLabel: LanguageSettings.instance.tr('home_all_countries'),
-                onChanged: (value) {
-                  _selectedCountry = value;
-                  _applyFilters();
-                },
+                onChanged: (value) { _selectedCountry = value; _applyFilters(); },
               ),
             ),
-            SizedBox(
-              width: compact ? constraints.maxWidth : 210,
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: _selectDateRange,
                 child: InputDecorator(
-                  decoration: _fieldDecoration(
-                    label: LanguageSettings.instance.tr('home_calendar'),
-                  ),
+                  decoration: _fieldDecoration(label: LanguageSettings.instance.tr('home_calendar')),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.calendar_month,
-                        size: 20,
-                        color: _accent(context),
-                      ),
+                      Icon(Icons.calendar_month, size: 20, color: _accent(context)),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _dateRangeLabel,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                      Expanded(child: Text(_dateRangeLabel, overflow: TextOverflow.ellipsis)),
                       if (_selectedDateRange != null)
-                        Text(
-                          '$_selectedStayDays ${LanguageSettings.instance.tr('home_days')}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                        Text('$_selectedStayDays ${LanguageSettings.instance.tr('home_days')}',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),
               ),
             ),
-            SizedBox(
-              width: compact ? constraints.maxWidth : 200,
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => _showHuespedesDialog(),
                 child: InputDecorator(
-                  decoration: _fieldDecoration(
-                    label: LanguageSettings.instance.tr('home_guests'),
-                  ),
+                  decoration: _fieldDecoration(label: LanguageSettings.instance.tr('home_guests')),
                   child: Row(
                     children: [
                       Icon(Icons.people, size: 20, color: _accent(context)),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _getHuespedesLabel(),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                      Expanded(child: Text(_getHuespedesLabel(), overflow: TextOverflow.ellipsis)),
                       const Icon(Icons.keyboard_arrow_down, size: 20),
                     ],
                   ),
                 ),
               ),
             ),
-            SizedBox(
-              width: compact ? constraints.maxWidth : null,
-              child: ElevatedButton.icon(
-                onPressed: _applyFilters,
-                icon: const Icon(Icons.search, size: 20),
-                label: Text(
-                  LanguageSettings.instance.tr('home_search_btn'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _bookingAccent,
-                  foregroundColor: Colors.black87,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+            const SizedBox(width: 10),
+            ElevatedButton.icon(
+              onPressed: _applyFilters,
+              icon: const Icon(Icons.search, size: 20),
+              label: Text(LanguageSettings.instance.tr('home_search_btn'),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _bookingAccent, foregroundColor: Colors.black87,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ],
