@@ -177,6 +177,7 @@ class _MisReservasPageState extends State<MisReservasPage>
   }
 
   Future<void> _cancelarReserva(int idReserva) async {
+    if (idReserva <= 0) return;
     final tr = LanguageSettings.instance.tr;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -797,7 +798,7 @@ class _MisReservasPageState extends State<MisReservasPage>
                     if (isActive)
                       OutlinedButton.icon(
                         onPressed: () =>
-                            _cancelarReserva(r['idReserva'] as int),
+                            _cancelarReserva(_parseInt(r['idReserva'])),
                         icon: const Icon(Icons.cancel_outlined, size: 16),
                         label: Text(tr('reservas_btn_cancel')),
                         style: OutlinedButton.styleFrom(
