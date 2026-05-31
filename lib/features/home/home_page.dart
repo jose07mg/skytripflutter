@@ -1258,69 +1258,79 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _bookingAccent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '✈️  ${_isLoadingHotels ? '...' : _allTrips.length} ${LanguageSettings.instance.tr('home_accommodations_worldwide')}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                LayoutBuilder(
-                  builder: (ctx, cons) => Text(
-                    LanguageSettings.instance.tr('home_hero_title'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: cons.maxWidth < 400 ? 26 : 34,
-                      fontWeight: FontWeight.w900,
-                      height: 1.15,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  LanguageSettings.instance.tr('home_hero_subtitle'),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.22),
-                        blurRadius: 32,
-                        offset: const Offset(0, 14),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
                       ),
-                    ],
-                  ),
-                  child: _buildMainSearchBar(),
+                      decoration: BoxDecoration(
+                        color: _bookingAccent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '✈️  ${_isLoadingHotels ? '...' : _allTrips.length} ${LanguageSettings.instance.tr('home_accommodations_worldwide')}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    LayoutBuilder(
+                      builder: (ctx, cons) => Text(
+                        LanguageSettings.instance.tr('home_hero_title'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: cons.maxWidth < 400 ? 26 : 34,
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      LanguageSettings.instance.tr('home_hero_subtitle'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.22),
+                              blurRadius: 32,
+                              offset: const Offset(0, 14),
+                            ),
+                          ],
+                        ),
+                        child: _buildMainSearchBar(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _buildQuickFilterChips(),
+                    const SizedBox(height: 28),
+                  ],
                 ),
-                const SizedBox(height: 18),
-                _buildQuickFilterChips(),
-                const SizedBox(height: 28),
-              ],
+              ),
             ),
           ),
         ],
@@ -1330,58 +1340,54 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildQuickFilterChips() {
     final quickFilters = _getQuickFilterOptions();
-    return SizedBox(
-      height: 38,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: quickFilters.length,
-        separatorBuilder: (_, i) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final option = quickFilters[index];
-          final service = option['service'] as String;
-          final isSelected = service.isEmpty
-              ? _activeQuickFilter == null
-              : _activeQuickFilter == service;
-          return GestureDetector(
-            onTap: () => _applyQuickFilter(service.isEmpty ? null : service),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: quickFilters.map((option) {
+        final service = option['service'] as String;
+        final isSelected = service.isEmpty
+            ? _activeQuickFilter == null
+            : _activeQuickFilter == service;
+        return GestureDetector(
+          onTap: () => _applyQuickFilter(service.isEmpty ? null : service),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? _bookingAccent
+                  : Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
                 color: isSelected
                     ? _bookingAccent
-                    : Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: isSelected
-                      ? _bookingAccent
-                      : Colors.white.withValues(alpha: 0.45),
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    option['icon'] as IconData,
-                    size: 14,
-                    color: isSelected ? Colors.black87 : Colors.white,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    option['label'] as String,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.black87 : Colors.white,
-                    ),
-                  ),
-                ],
+                    : Colors.white.withValues(alpha: 0.45),
+                width: 1.5,
               ),
             ),
-          );
-        },
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  option['icon'] as IconData,
+                  size: 14,
+                  color: isSelected ? Colors.black87 : Colors.white,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  option['label'] as String,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? Colors.black87 : Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -1700,10 +1706,10 @@ class _SearchScreenState extends State<SearchScreen> {
                       if (_selectedDateRange != null)
                         Text(
                           '$_selectedStayDays ${LanguageSettings.instance.tr('home_days')}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF4A5772),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
@@ -1743,6 +1749,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 icon: const Icon(Icons.search, size: 20),
                 label: Text(
                   LanguageSettings.instance.tr('home_search_btn'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -1753,7 +1761,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   foregroundColor: Colors.black87,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
+                    horizontal: 24,
                     vertical: 16,
                   ),
                   shape: RoundedRectangleBorder(
@@ -1797,9 +1805,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(width: 8),
                   Text(
                     LanguageSettings.instance.tr('home_filters'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1F36),
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                     ),
                   ),
@@ -2332,18 +2340,18 @@ class _SearchScreenState extends State<SearchScreen> {
                   children: [
                     Text(
                       '${_filteredTrips.length} ${_filteredTrips.length != 1 ? LanguageSettings.instance.tr('home_accommodations_found_p') : LanguageSettings.instance.tr('home_accommodations_found')}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1F36),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (_searchController.text.isNotEmpty)
                       Text(
                         'para "${_searchController.text}"',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF4A5772),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                   ],
@@ -2739,17 +2747,25 @@ class _SearchScreenState extends State<SearchScreen> {
     final currency = CurrencySettings.instance;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TripDetailPage(
-            trip: hotel,
-            onPurchase: () => _buyTrip(hotel),
-            huespedes: _huespedes,
-            fechaSeleccionada: _selectedDateRange,
+      onTap: () async {
+        await RecentlyViewedService.instance.add(hotel);
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TripDetailPage(
+              trip: hotel,
+              onPurchase: () => _buyTrip(hotel),
+              huespedes: _huespedes,
+              fechaSeleccionada: _selectedDateRange,
+            ),
           ),
-        ),
-      ),
+        );
+        if (!mounted) return;
+        setState(() {
+          _recentlyViewed = RecentlyViewedService.instance.items;
+        });
+      },
       child: Container(
         width: 180,
         decoration: BoxDecoration(

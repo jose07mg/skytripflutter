@@ -6,7 +6,6 @@ class RecentlyViewedService {
   RecentlyViewedService._();
 
   static const _key = 'recently_viewed_hotels';
-  static const _max = 8;
 
   List<Map<String, dynamic>> _items = [];
   List<Map<String, dynamic>> get items => List.unmodifiable(_items);
@@ -40,7 +39,6 @@ class RecentlyViewedService {
       'servicios': hotel['servicios'],
       'description': hotel['description'],
     });
-    if (_items.length > _max) _items = _items.sublist(0, _max);
     await _save();
   }
 
