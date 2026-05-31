@@ -18,9 +18,9 @@ class HotelService implements HotelEditorService {
   final AuthService _authService = AuthService();
 
   Map<String, String> get _authHeaders => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${_authService.token}',
-      };
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ${_authService.token}',
+  };
 
   Future<List<Map<String, dynamic>>> getHoteles() async {
     final response = await http
@@ -29,11 +29,14 @@ class HotelService implements HotelEditorService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final list = data is List ? data : (data['data'] as List? ?? []);
-      return list.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return list
+          .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     }
     throw Exception('Error al cargar hoteles: ${response.statusCode}');
   }
 
+  @override
   Future<List<Map<String, dynamic>>> getCiudades() async {
     final response = await http
         .get(Uri.parse('${ApiConstants.baseUrl}/ciudades'))
@@ -41,11 +44,14 @@ class HotelService implements HotelEditorService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final list = data is List ? data : (data['data'] as List? ?? []);
-      return list.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return list
+          .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     }
     throw Exception('Error al cargar ciudades: ${response.statusCode}');
   }
 
+  @override
   Future<bool> createHotel(Map<String, dynamic> hotelData) async {
     _requireAdmin();
     final response = await http.post(
@@ -58,6 +64,7 @@ class HotelService implements HotelEditorService {
     throw Exception('Error al crear hotel: $err');
   }
 
+  @override
   Future<bool> updateHotel(int hotelId, Map<String, dynamic> hotelData) async {
     _requireAdmin();
     final response = await http.post(
@@ -70,6 +77,7 @@ class HotelService implements HotelEditorService {
     throw Exception('Error al actualizar hotel: $err');
   }
 
+  @override
   Future<bool> deleteHotel(int hotelId) async {
     _requireAdmin();
     final response = await http.delete(
@@ -81,8 +89,10 @@ class HotelService implements HotelEditorService {
     throw Exception('Error al eliminar hotel: $err');
   }
 
-  Future<List<Map<String, dynamic>>> getHabitaciones(int hotelId,
-      {bool includeAll = false}) async {
+  Future<List<Map<String, dynamic>>> getHabitaciones(
+    int hotelId, {
+    bool includeAll = false,
+  }) async {
     final url = includeAll
         ? '${ApiConstants.baseUrl}/habitaciones?id_hotel=$hotelId&includeAll=1'
         : '${ApiConstants.baseUrl}/habitaciones?id_hotel=$hotelId';
@@ -92,7 +102,9 @@ class HotelService implements HotelEditorService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final list = data is List ? data : (data['data'] as List? ?? []);
-      return list.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return list
+          .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     }
     throw Exception('Error al cargar habitaciones: ${response.statusCode}');
   }
@@ -109,7 +121,10 @@ class HotelService implements HotelEditorService {
     throw Exception('Error al crear habitación: $err');
   }
 
-  Future<bool> updateHabitacion(int habitacionId, Map<String, dynamic> data) async {
+  Future<bool> updateHabitacion(
+    int habitacionId,
+    Map<String, dynamic> data,
+  ) async {
     _requireAdmin();
     final response = await http.post(
       Uri.parse('${ApiConstants.baseUrl}/habitaciones/update'),
@@ -124,7 +139,9 @@ class HotelService implements HotelEditorService {
   Future<bool> deleteHabitacion(int habitacionId) async {
     _requireAdmin();
     final response = await http.delete(
-      Uri.parse('${ApiConstants.baseUrl}/habitaciones?id_habitacion=$habitacionId'),
+      Uri.parse(
+        '${ApiConstants.baseUrl}/habitaciones?id_habitacion=$habitacionId',
+      ),
       headers: _authHeaders,
     );
     if (response.statusCode == 200) return true;
@@ -133,8 +150,12 @@ class HotelService implements HotelEditorService {
   }
 
   void _requireAdmin() {
-    if (!_authService.isAuthenticated) throw Exception('Usuario no autenticado');
-    if (!_authService.isAdmin) throw Exception('Acceso solo para administradores');
+    if (!_authService.isAuthenticated) {
+      throw Exception('Usuario no autenticado');
+    }
+    if (!_authService.isAdmin) {
+      throw Exception('Acceso solo para administradores');
+    }
   }
 
   String _parseError(String body) {

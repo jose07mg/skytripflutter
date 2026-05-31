@@ -14,7 +14,11 @@ class AuthException implements Exception {
   String toString() => 'AuthException: $message';
 }
 
-class AuthService {
+abstract class AuthStateReader {
+  bool get isAdmin;
+}
+
+class AuthService implements AuthStateReader {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
@@ -33,6 +37,7 @@ class AuthService {
   String? _pendingPassword;
 
   bool get isAuthenticated => _token != null;
+  @override
   bool get isAdmin => _role == 'admin';
   bool get isUser => _role == 'user';
   String? get role => _role;

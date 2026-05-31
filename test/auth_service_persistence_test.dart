@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rms/features/auth/auth_service.dart';
+import 'package:skytrip/features/auth/auth_service.dart';
 
 void main() {
   setUp(() async {
