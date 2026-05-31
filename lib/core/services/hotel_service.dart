@@ -3,7 +3,14 @@ import 'package:http/http.dart' as http;
 import '../../core/constants/api_constants.dart';
 import '../../features/auth/auth_service.dart';
 
-class HotelService {
+abstract class HotelEditorService {
+  Future<List<Map<String, dynamic>>> getCiudades();
+  Future<bool> createHotel(Map<String, dynamic> hotelData);
+  Future<bool> updateHotel(int hotelId, Map<String, dynamic> hotelData);
+  Future<bool> deleteHotel(int hotelId);
+}
+
+class HotelService implements HotelEditorService {
   static final HotelService _instance = HotelService._internal();
   factory HotelService() => _instance;
   HotelService._internal();
