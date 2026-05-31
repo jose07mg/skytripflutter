@@ -29,6 +29,9 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _editMode = false;
+  int? _reservasCount;
+  int? _favoritosCount;
+  int? _reviewsCount;
 
   String? _orNull(String v) {
     final s = v.trim();
@@ -67,23 +70,53 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _isLoading = false);
       return;
     }
+    final headers = {'Authorization': 'Bearer $token'};
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/me'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final results = await Future.wait([
+        http.get(Uri.parse('${ApiConstants.baseUrl}/me'), headers: headers),
+        http.get(Uri.parse('${ApiConstants.baseUrl}/reservas'), headers: headers),
+        http.get(Uri.parse('${ApiConstants.baseUrl}/favoritos'), headers: headers),
+      ]);
+
+      // Profile
+      if (results[0].statusCode == 200) {
+        final data = jsonDecode(results[0].body);
         final user = (data is Map) ? data : null;
         if (user != null) {
           _usuarioController.text = user['usuario']?.toString() ?? '';
           _emailController.text = user['email']?.toString() ?? '';
           _direccionController.text = user['direccion']?.toString() ?? '';
-          _paisNacimientoController.text =
-              user['pais_nacimiento']?.toString() ?? '';
-          _fechaNacimientoController.text =
-              user['fecha_nacimiento']?.toString() ?? '';
+          _paisNacimientoController.text = user['pais_nacimiento']?.toString() ?? '';
+          _fechaNacimientoController.text = user['fecha_nacimiento']?.toString() ?? '';
+
+          // Reviews — filtered by user ID
+          final userId = user['id_usuario'];
+          if (userId != null) {
+            try {
+              final rv = await http.get(
+                Uri.parse('${ApiConstants.baseUrl}/reviews?id_usuario=$userId'),
+              );
+              if (rv.statusCode == 200) {
+                final list = jsonDecode(rv.body);
+                _reviewsCount = list is List ? list.length : 0;
+              }
+            } catch (_) {}
+          }
         }
+      }
+
+      // Reservas
+      if (results[1].statusCode == 200) {
+        final list = jsonDecode(results[1].body);
+        _reservasCount = list is List
+            ? list.length
+            : (list is Map && list['data'] is List ? (list['data'] as List).length : 0);
+      }
+
+      // Favoritos
+      if (results[2].statusCode == 200) {
+        final list = jsonDecode(results[2].body);
+        _favoritosCount = list is List ? list.length : 0;
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
@@ -126,9 +159,16 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(10)),
         ));
       } else {
+        String errMsg = tr('profile_updated_error');
+        try {
+          final b = jsonDecode(response.body) as Map<String, dynamic>;
+          final s = b['error']?.toString() ?? '';
+          if (s.isNotEmpty) errMsg = s;
+        } catch (_) {}
         messenger.showSnackBar(SnackBar(
-          content: Text(tr('profile_updated_error')),
+          content: Text(errMsg),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ));
       }
     } catch (_) {
@@ -337,13 +377,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Row(
                             children: [
                               _statItem(Icons.book_online_outlined,
-                                  tr('profile_stat_bookings'), '—'),
+                                  tr('profile_stat_bookings'),
+                                  _reservasCount?.toString() ?? '—'),
                               _divider(),
                               _statItem(Icons.favorite_outline,
-                                  tr('profile_stat_favorites'), '—'),
+                                  tr('profile_stat_favorites'),
+                                  _favoritosCount?.toString() ?? '—'),
                               _divider(),
                               _statItem(Icons.star_outline,
-                                  tr('profile_stat_reviews'), '—'),
+                                  tr('profile_stat_reviews'),
+                                  _reviewsCount?.toString() ?? '—'),
                             ],
                           ),
                         ),
