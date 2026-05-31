@@ -2357,8 +2357,7 @@ class _SearchScreenState extends State<SearchScreen> {
   InputDecoration _fieldDecoration({String? label}) {
     return InputDecoration(
       labelText: label,
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
       filled: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
